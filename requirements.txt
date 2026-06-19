@@ -10,3 +10,4 @@ streamlit-autorefresh
 bcrypt
 shapely
 geopandas
+pytz
