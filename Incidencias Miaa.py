@@ -141,23 +141,14 @@ def format_supervisor(text):
     return text
 
 def render_card(row, color):
-    # ID único para el estado de esta tarjeta
-    pozo_id = row.get('NUM_POZO')
-    key_state = f"show_details_{pozo_id}"
-    if key_state not in st.session_state:
-        st.session_state[key_state] = False
-
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
     
-    # 1. Abrimos el contenedor principal de la tarjeta
-    st.markdown(f"<div class='card' style='border-left-color: {color};'>", unsafe_allow_html=True)
-    
-    # 2. Contenido de la tarjeta (lo que ya tenías)
     st.markdown(f"""
+    <div class='card' style='border-left-color: {color};'>
         <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-            <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {pozo_id}</div>
+            <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
             <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
         </div>
         <div class='label'>Diagnóstico</div>
@@ -167,20 +158,13 @@ def render_card(row, color):
             <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
             <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
         </div>
+    </div>
     """, unsafe_allow_html=True)
-    
-    # 3. Botón para alternar detalles (usamos st.button para manejar el estado)
-    if st.button("📁 Ver Detalles", key=f"btn_{pozo_id}"):
-        st.session_state[key_state] = not st.session_state[key_state]
-        st.rerun()
-
-    # 4. Si el estado es True, renderizamos los detalles DENTRO del mismo div
-    if st.session_state[key_state]:
-        st.markdown("<div style='border-top: 1px solid #374151; margin-top: 10px; padding-top: 10px;'>", unsafe_allow_html=True)
-        gdf = get_geometries(pozo_id)
+    with st.expander("🌎 Ver Detalles"):
+        gdf = get_geometries(row.get('NUM_POZO'))
         if gdf is not None and not gdf.empty:
             st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-            dibujar_mapa(gdf, color, pozo_id, inicio)
+            dibujar_mapa(gdf, color, row.get('NUM_POZO'), inicio)
             sectores = ', '.join(gdf['Sector'].dropna().unique())
             distritos = ', '.join(gdf['Distrito'].dropna().unique())
             raw_supervisores = gdf['Supervisor'].dropna().unique()
@@ -203,10 +187,7 @@ def render_card(row, color):
                     </div>   
                 </div>
             """, unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True) # Cierra el div de detalles
-    
-    # 5. Cerramos el div de la tarjeta
-    st.markdown("</div>", unsafe_allow_html=True)
+
 # LÓGICA PRINCIPAL
 st.markdown("""<div class="logo-container"><img src="https://raw.githubusercontent.com/Miaa-Aguascalientes/Logos/38504978c8f77a4dac38ad476f74dbdee6af2cad/LogoMIAA.svg" width="200"></div>""", unsafe_allow_html=True)
 st.markdown("""<div class="header-wrapper"><img src="https://github.com/Miaa-Aguascalientes/Logos/blob/main/procesodelpecado.gif?raw=true" width="60"><h1 class="title-text">Registro de Incidencias</h1></div>""", unsafe_allow_html=True)
