@@ -27,9 +27,7 @@ st.markdown("""
     .block-container { padding-top: 0rem !important; margin-top: -10px !important; }
     .top-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
     .top-logo-group { display: flex; align-items: center; gap: 12px; }
-    .top-title-text { color: #ffffff; font-size: 13px; font-weight: 600; line-height: 1.2; margin: 0; }
-    .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-    .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
+    .top-title-text { color: #ffffff; font-size: 15px; font-weight: 700; line-height: 1.2; margin: 0; }
     .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
@@ -161,7 +159,6 @@ def format_duracion(delta):
     horas, resto = divmod(delta.seconds, 3600)
     minutos, _ = divmod(resto, 60)
     
-    # Manejo de plurales y formato limpio según requerimiento exacto
     label_dias = "Día" if dias == 1 else "Días"
     label_horas = "hora" if horas == 1 else "horas"
     label_minutos = "minuto" if minutos == 1 else "minutos"
@@ -294,15 +291,8 @@ st.markdown("""
     <div class="top-header">
         <div class="top-logo-group">
             <img src="https://raw.githubusercontent.com/Miaa-Aguascalientes/Logos/38504978c8f77a4dac38ad476f74dbdee6af2cad/LogoMIAA.svg" width="110">
-            <div class="top-title-text">Modelo Integral de Aguas<br>de Aguascalientes</div>
+            <div class="top-title-text">Registro de eventos</div>
         </div>
-    </div>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <div class="section-header">
-        <img src="https://github.com/Miaa-Aguascalientes/Logos/badge.svg?raw=true" width="40" onerror="this.style.display='none'">
-        <h1 class="section-title">Registro de Incidencias</h1>
     </div>
 """, unsafe_allow_html=True)
 
@@ -388,8 +378,6 @@ if activar_busqueda:
                     st.info(f"✅ **Sin afectación actual ni reciente.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas o cerradas recientemente (hoy o ayer).")
             except Exception as e:
                 st.error(f"Error al validar pozos para la colonia: {e}")
-
-st.markdown("---")
 
 try:
     df = get_data()
