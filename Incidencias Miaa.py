@@ -222,6 +222,7 @@ try:
         </div>
     """, unsafe_allow_html=True)
     
+    # Renderizado de tarjetas superiores (activas + cerradas de hoy)
     for _, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
@@ -229,12 +230,17 @@ try:
         
     st.markdown("---")
     st.subheader("📅 Histórico")
+    
     if not historico.empty:
-        opciones_raw = sorted(historico['FECHA_HORA_INICIO'].dt.strftime('%Y-%m').unique(), reverse=True)
+        # Usamos FECHA_HORA_FIN para agrupar el histórico, ya que es cuando se cerraron
+        opciones_raw = sorted(historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m').unique(), reverse=True)
         MESES_ES = {'01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'}
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
-        for _, row in historico[historico['FECHA_HORA_INICIO'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
+        
+        # Filtramos por el mes seleccionado
+        for _, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d")
+
 except Exception as e:
     st.error("Error al cargar la aplicación. Reintentando conexión con la base de datos...")
