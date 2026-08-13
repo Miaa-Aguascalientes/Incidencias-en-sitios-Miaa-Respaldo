@@ -41,7 +41,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Regla global estricta para forzar renderizado en motores móviles (WebKit/Blink) */
     div[data-testid="stExpander"] {
         -webkit-appearance: none;
         box-sizing: border-box;
@@ -133,7 +132,13 @@ def dibujar_mapa(gdf, color, unique_key):
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
+    
+    # Contenedor con borde y fondo para envolver el mapa de las colonias afectadas
+    st.markdown(f"""
+    <div style="border: 2px solid {color}; border-radius: 10px; background-color: #050a10; padding: 4px; margin-bottom: 10px;">
+    """, unsafe_allow_html=True)
     st_folium(m, height=300, use_container_width=True, key=unique_key)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def format_supervisor(text):
     wa_icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align: middle; margin-right: 4px;"><path d="M12.01 2c-5.51 0-9.99 4.48-9.99 9.99 0 1.76.46 3.48 1.33 5l-1.33 4.88 5-1.31c1.47.8 3.16 1.22 4.87 1.22 5.51 0 9.99-4.48 9.99-9.99S17.52 2 12.01 2zm0 18c-1.46 0-2.88-.41-4.11-1.18l-.29-.18-3.05.8.81-2.97-.18-.3C3.65 14.88 3.23 13.43 3.23 11.99 3.23 7.02 7.04 3.2 12.01 3.2s8.78 3.82 8.78 8.79-3.95 8.79-8.78 8.79zM16.48 15.5c-.27-.13-1.61-.79-1.86-.88s-.43-.13-.61.13c-.18.26-.69.88-.85 1.06-.16.18-.32.2-.59.07s-1.14-.42-2.17-1.34c-.8-.71-1.34-1.59-1.5-1.86s-.01-.43.11-.57c.12-.13.27-.34.4-.51.13-.17.17-.3.26-.51.09-.2.04-.37-.02-.51s-.61-1.48-.84-2.03c-.22-.53-.45-.46-.61-.46-.16 0-.34-.01-.51-.01s-.44.06-.67.31c-.23.25-.88.86-.88 2.09s.6 2.42.69 2.55c.09.13 1.73 2.64 4.19 3.7c.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.51-.62 1.72-1.21.21-.59.21-1.1.15-1.21-.06-.11-.23-.17-.5-.3z"/></svg>'
@@ -172,7 +177,6 @@ def render_card(row, color, unique_key, con_mapa=True):
     """, unsafe_allow_html=True)
     
     with st.expander("🌎 Ver Detalles"):
-        # Forzamos estilos con prefijos explícitos de WebKit y múltiples selectores para que el motor del cel no los ignore
         st.markdown(f"""
         <style>
             div[data-testid="stExpander"] {{
