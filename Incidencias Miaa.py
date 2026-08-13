@@ -25,9 +25,11 @@ st.markdown("""
     .stApp { background-color: #050a10 !important; }
     #MainMenu, header, footer { visibility: hidden !important; height: 0 !important; }
     .block-container { padding-top: 0rem !important; margin-top: -10px !important; }
-    .logo-container { display: flex; justify-content: center; margin-bottom: 0px; }
-    .header-wrapper { display: flex; justify-content: center; align-items: center; gap: 0px; margin-bottom: 5px; }
-    .title-text { color: white; font-size: 20px !important; margin: 0 !important; }
+    .top-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+    .top-logo-group { display: flex; align-items: center; gap: 12px; }
+    .top-title-text { color: #ffffff; font-size: 13px; font-weight: 600; line-height: 1.2; margin: 0; }
+    .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
     .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
@@ -185,7 +187,6 @@ def render_card(row, color, unique_key, con_mapa=True):
                     </div>
                 """, unsafe_allow_html=True)
         else:
-            # Modo histórico: Solo texto y nombres de colonias, sin polígonos ni mapas
             df_info = get_colonias_info(row.get('NUM_POZO'))
             if df_info is not None and not df_info.empty:
                 colonias = ', '.join(df_info['Col_atl'].dropna().unique())
@@ -217,8 +218,21 @@ def render_card(row, color, unique_key, con_mapa=True):
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
-st.markdown("""<div class="logo-container"><img src="https://raw.githubusercontent.com/Miaa-Aguascalientes/Logos/38504978c8f77a4dac38ad476f74dbdee6af2cad/LogoMIAA.svg" width="200"></div>""", unsafe_allow_html=True)
-st.markdown("""<div class="header-wrapper"><img src="https://github.com/Miaa-Aguascalientes/Logos/blob/main/procesodelpecado.gif?raw=true" width="60"><h1 class="title-text">Registro de Incidencias</h1></div>""", unsafe_allow_html=True)
+st.markdown("""
+    <div class="top-header">
+        <div class="top-logo-group">
+            <img src="https://raw.githubusercontent.com/Miaa-Aguascalientes/Logos/38504978c8f77a4dac38ad476f74dbdee6af2cad/LogoMIAA.svg" width="110">
+            <div class="top-title-text">Modelo Integral de Aguas<br>de Aguascalientes</div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <div class="section-header">
+        <img src="https://github.com/Miaa-Aguascalientes/Logos/blob/main/procesodelpecado.gif?raw=true" width="40">
+        <h1 class="section-title">Registro de Incidencias</h1>
+    </div>
+""", unsafe_allow_html=True)
 
 try:
     df = get_data()
@@ -233,25 +247,29 @@ try:
     n_procesos = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False)])
     n_pendientes = len(activas[activas['ESTATUS'].str.contains('PENDIENTE', case=False, na=False)])
     n_cerradas = len(cerradas_hoy)
+    n_total = len(activas) + len(cerradas_hoy)
     
     st.markdown(f"""
         <div style="display: flex; justify-content: space-between; gap: 10px; margin-bottom: 20px;">
-            <div style="flex: 1; background-color: #FFD7001A; padding: 10px; border-radius: 8px; border-top: 3px solid #FFD700; text-align: center;">
+            <div style="flex: 1; background-color: #111827; padding: 10px; border-radius: 8px; border-top: 3px solid #FFD700; text-align: center;">
                 <div style="color: #FFD700; font-weight: bold; font-size: 9px; text-transform: uppercase;">En Proceso</div>
                 <div style="font-size: 20px; color: white; font-weight: bold;">{n_procesos}</div>
             </div>
-            <div style="flex: 1; background-color: #FF4C4C1A; padding: 10px; border-radius: 8px; border-top: 3px solid #FF4C4C; text-align: center;">
-                <div style="color: #FF4C4C; font-weight: bold; font-size: 9px; text-transform: uppercase;">Pendiente</div>
+            <div style="flex: 1; background-color: #111827; padding: 10px; border-radius: 8px; border-top: 3px solid #FF4C4C; text-align: center;">
+                <div style="color: #FF4C4C; font-weight: bold; font-size: 9px; text-transform: uppercase;">Pendientes</div>
                 <div style="font-size: 20px; color: white; font-weight: bold;">{n_pendientes}</div>
             </div>
-            <div style="flex: 1; background-color: #28a7451A; padding: 10px; border-radius: 8px; border-top: 3px solid #28a745; text-align: center;">
-                <div style="color: #28a745; font-weight: bold; font-size: 9px; text-transform: uppercase;">Cerrada</div>
+            <div style="flex: 1; background-color: #111827; padding: 10px; border-radius: 8px; border-top: 3px solid #28a745; text-align: center;">
+                <div style="color: #28a745; font-weight: bold; font-size: 9px; text-transform: uppercase;">Cerradas</div>
                 <div style="font-size: 20px; color: white; font-weight: bold;">{n_cerradas}</div>
+            </div>
+            <div style="flex: 1; background-color: #111827; padding: 10px; border-radius: 8px; border-top: 3px solid #9ca3af; text-align: center;">
+                <div style="color: #9ca3af; font-weight: bold; font-size: 9px; text-transform: uppercase;">Total</div>
+                <div style="font-size: 20px; color: white; font-weight: bold;">{n_total}</div>
             </div>
         </div>
     """, unsafe_allow_html=True)
     
-    # Activas y cerradas de hoy SÍ muestran mapa (con_mapa=True)
     for idx, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
@@ -265,7 +283,6 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
-        # Histórico NO muestra mapas ni polígonos, solo datos textuales (con_mapa=False)
         for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d", unique_key=f"card_hist_{idx}", con_mapa=False)
             
