@@ -73,44 +73,17 @@ def get_geometries(num_pozo):
 
 @st.fragment
 def dibujar_mapa(gdf, color, num_pozo, inicio):
-    # 1. Creamos el mapa base. 
-    # Usamos 'tiles=None' para que el mapa inicie vacío y nosotros controlemos la capa base.
     m = folium.Map(
         location=[gdf.geometry.centroid.y.mean(), gdf.geometry.centroid.x.mean()], 
         zoom_start=13, 
         tiles=None,
         attribution_control=False
     )
+    folium.TileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", name="Calles", attr="&copy; OpenStreetMap contributors").add_to(m)
+    folium.TileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", name="Satélite", attr="Esri").add_to(m)
+    folium.TileLayer("CartoDB dark_matter", name="CartoDB dark_matter", attr="&copy; CartoDB").add_to(m)
+    folium.GeoJson(gdf, style_function=lambda x: {'fillColor': color, 'color': color, 'weight': 2, 'fillOpacity': 0.4}).add_to(m)
     
-    # 2. Agregamos la capa de "Calles" (OpenStreetMap) primero
-    folium.TileLayer(
-        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", 
-        name="Calles", 
-        attr="&copy; OpenStreetMap contributors"
-    ).add_to(m)
-    
-    # 3. Agregamos la capa de "Satélite"
-    folium.TileLayer(
-        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", 
-        name="Satélite", 
-        attr="Esri"
-    ).add_to(m)
-
-    # 4. Agregamos "CartoDB dark_matter" al final, como pediste
-    folium.TileLayer(
-        "CartoDB dark_matter", 
-        name="CartoDB dark_matter", 
-        attr="&copy; CartoDB"
-    ).add_to(m)
-
-
-    # 3. Capa de incidencia
-    folium.GeoJson(
-        gdf, 
-        style_function=lambda x: {'fillColor': color, 'color': color, 'weight': 2, 'fillOpacity': 0.4}
-    ).add_to(m)
-    
-    # 4. Etiquetas
     for _, r in gdf.iterrows():
         folium.Marker(
             location=[r.geometry.centroid.y, r.geometry.centroid.x],
@@ -122,7 +95,6 @@ def dibujar_mapa(gdf, color, num_pozo, inicio):
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
-        
     st_folium(m, height=300, use_container_width=True, key=f"map_{num_pozo}")
 
 def format_supervisor(text):
@@ -197,9 +169,12 @@ try:
     df['FECHA_HORA_INICIO'] = pd.to_datetime(df['FECHA_HORA_INICIO'])
     df['FECHA_HORA_FIN'] = pd.to_datetime(df['FECHA_HORA_FIN'])
     hoy = get_now_mexico().date()
+    
     activas = df[~df['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
     cerradas_hoy = df[(df['ESTATUS'].str.contains('CERRADA', case=False, na=False)) & (df['FECHA_HORA_FIN'].dt.date == hoy)]
-    historico = df[(df['ESTATUS'].str.contains('CERRADA', case=False, na=False)) & (df['FECHA_HORA_FIN'].dt.date != hoy)]
+    
+    # El histórico contiene todas las cerradas para ser filtradas por el selectbox
+    historico = df[df['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
     
     n_procesos = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False)])
     n_pendientes = len(activas[activas['ESTATUS'].str.contains('PENDIENTE', case=False, na=False)])
@@ -222,7 +197,6 @@ try:
         </div>
     """, unsafe_allow_html=True)
     
-    # Renderizado de tarjetas superiores (activas + cerradas de hoy)
     for _, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
@@ -230,17 +204,13 @@ try:
         
     st.markdown("---")
     st.subheader("📅 Histórico")
-    
     if not historico.empty:
-        # Usamos FECHA_HORA_FIN para agrupar el histórico, ya que es cuando se cerraron
+        # Se agrupa por fecha de cierre para asegurar que todo aparezca
         opciones_raw = sorted(historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m').unique(), reverse=True)
         MESES_ES = {'01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'}
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
-        
-        # Filtramos por el mes seleccionado
         for _, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d")
-
 except Exception as e:
     st.error("Error al cargar la aplicación. Reintentando conexión con la base de datos...")
