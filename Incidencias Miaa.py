@@ -32,7 +32,7 @@ st.markdown("""
     .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
     
     .card-container { background: #111827; border-radius: 12px; border-left: 6px solid; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); overflow: hidden; }
-    .card-body { padding: 12px; }
+    .card-body { padding: 12px 12px 4px 12px; }
     .card-details { background-color: #0b0f17; border-top: 1px solid #1f2937; padding: 12px; }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
@@ -155,7 +155,7 @@ def render_card(row, color, unique_key, con_mapa=True):
             </div>
             <div class='label'>Diagnóstico</div>
             <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-            <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
+            <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;'>
                 <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
                 <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
                 <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
@@ -168,7 +168,7 @@ def render_card(row, color, unique_key, con_mapa=True):
     if state_key not in st.session_state:
         st.session_state[state_key] = False
 
-    btn_label = "▲ Ocultar Detalles y Mapa" if st.session_state[state_key] else "▼ 🌎 Ver Detalles y Mapa"
+    btn_label = "▲ Ocultar Detalles" if st.session_state[state_key] else "▼ 🌎 Ver Detalles"
     if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
         st.session_state[state_key] = not st.session_state[state_key]
         st.rerun()
