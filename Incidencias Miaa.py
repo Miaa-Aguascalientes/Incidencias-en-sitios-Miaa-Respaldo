@@ -33,6 +33,14 @@ st.markdown("""
     .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
+    
+    /* Forzar texto blanco brillante en el Expander (Ver Detalles), Colonias y Supervisores */
+    div[data-testid="stExpander"] summary p, 
+    div[data-testid="stExpander"] summary span, 
+    div[data-testid="stExpander"] summary {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -130,12 +138,13 @@ def format_supervisor(text):
     if match:
         num = f"{match.group(1)}{match.group(2)}{match.group(3)}{match.group(4)}"
         tel_full = f"52{num}"
-        return text.replace(match.group(0), f"<strong>{match.group(0)}</strong>") + f"""
+        # Forzar texto del supervisor en blanco brillante
+        return text.replace(match.group(0), f"<strong style='color: #ffffff;'>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 8px; display: flex; gap: 10px;'>
                 <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 40px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
                 <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 6px 28px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
             </div>"""
-    return text
+    return f"<span style='color: #ffffff;'>{text}</span>"
 
 def render_card(row, color, unique_key, con_mapa=True):
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
@@ -162,7 +171,8 @@ def render_card(row, color, unique_key, con_mapa=True):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                # Colonias con color blanco muy brillante
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
@@ -171,7 +181,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 for item in raw_supervisores:
                     items = [s.strip() for s in item.split(',') if s.strip()]
                     supervisores_list.extend([format_supervisor(s) for s in items])
-                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; color: #ffffff;'>• {s}</div>" for s in supervisores_list])
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
@@ -182,7 +192,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                         </div>
                         <div style='padding: 0px; margin-top: 15px;'>
                             <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
                         </div>   
                     </div>
                 """, unsafe_allow_html=True)
@@ -197,11 +207,11 @@ def render_card(row, color, unique_key, con_mapa=True):
                 for item in raw_supervisores:
                     items = [s.strip() for s in item.split(',') if s.strip()]
                     supervisores_list.extend([format_supervisor(s) for s in items])
-                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; color: #ffffff;'>• {s}</div>" for s in supervisores_list])
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
@@ -210,7 +220,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                         </div>
                         <div style='padding: 0px; margin-top: 15px;'>
                             <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
                         </div>   
                     </div>
                 """, unsafe_allow_html=True)
