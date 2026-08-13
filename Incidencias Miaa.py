@@ -72,7 +72,7 @@ def get_geometries(num_pozo):
     return None
 
 @st.fragment
-def dibujar_mapa(gdf, color, num_pozo, inicio):
+def dibujar_mapa(gdf, color, unique_key):
     m = folium.Map(
         location=[gdf.geometry.centroid.y.mean(), gdf.geometry.centroid.x.mean()], 
         zoom_start=13, 
@@ -95,7 +95,7 @@ def dibujar_mapa(gdf, color, num_pozo, inicio):
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
-    st_folium(m, height=300, use_container_width=True, key=f"map_{num_pozo}")
+    st_folium(m, height=300, use_container_width=True, key=unique_key)
 
 def format_supervisor(text):
     wa_icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align: middle; margin-right: 4px;"><path d="M12.01 2c-5.51 0-9.99 4.48-9.99 9.99 0 1.76.46 3.48 1.33 5l-1.33 4.88 5-1.31c1.47.8 3.16 1.22 4.87 1.22 5.51 0 9.99-4.48 9.99-9.99S17.52 2 12.01 2zm0 18c-1.46 0-2.88-.41-4.11-1.18l-.29-.18-3.05.8.81-2.97-.18-.3C3.65 14.88 3.23 13.43 3.23 11.99 3.23 7.02 7.04 3.2 12.01 3.2s8.78 3.82 8.78 8.79-3.95 8.79-8.78 8.79zM16.48 15.5c-.27-.13-1.61-.79-1.86-.88s-.43-.13-.61.13c-.18.26-.69.88-.85 1.06-.16.18-.32.2-.59.07s-1.14-.42-2.17-1.34c-.8-.71-1.34-1.59-1.5-1.86s-.01-.43.11-.57c.12-.13.27-.34.4-.51.13-.17.17-.3.26-.51.09-.2.04-.37-.02-.51s-.61-1.48-.84-2.03c-.22-.53-.45-.46-.61-.46-.16 0-.34-.01-.51-.01s-.44.06-.67.31c-.23.25-.88.86-.88 2.09s.6 2.42.69 2.55c.09.13 1.73 2.64 4.19 3.7c.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.51-.62 1.72-1.21.21-.59.21-1.1.15-1.21-.06-.11-.23-.17-.5-.3z"/></svg>'
@@ -112,7 +112,7 @@ def format_supervisor(text):
             </div>"""
     return text
 
-def render_card(row, color):
+def render_card(row, color, unique_key):
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
@@ -136,7 +136,7 @@ def render_card(row, color):
         gdf = get_geometries(row.get('NUM_POZO'))
         if gdf is not None and not gdf.empty:
             st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-            dibujar_mapa(gdf, color, row.get('NUM_POZO'), inicio)
+            dibujar_mapa(gdf, color, unique_key)
             sectores = ', '.join(gdf['Sector'].dropna().unique())
             distritos = ', '.join(gdf['Distrito'].dropna().unique())
             raw_supervisores = gdf['Supervisor'].dropna().unique()
@@ -172,8 +172,6 @@ try:
     
     activas = df[~df['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
     cerradas_hoy = df[(df['ESTATUS'].str.contains('CERRADA', case=False, na=False)) & (df['FECHA_HORA_FIN'].dt.date == hoy)]
-    
-    # Filtramos para asegurar que solo agarre registros cerrados que SÍ tengan fecha de fin válida
     historico = df[df['ESTATUS'].str.contains('CERRADA', case=False, na=False) & df['FECHA_HORA_FIN'].notnull()].copy()
     
     n_procesos = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False)])
@@ -197,10 +195,11 @@ try:
         </div>
     """, unsafe_allow_html=True)
     
-    for _, row in pd.concat([activas, cerradas_hoy]).iterrows():
+    # Renderizar activas y cerradas de hoy con keys únicas basadas en su índice del DataFrame original
+    for idx, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
-        render_card(row, color)
+        render_card(row, color, unique_key=f"card_hoy_{idx}")
         
     st.markdown("---")
     st.subheader("📅 Histórico")
@@ -209,7 +208,10 @@ try:
         MESES_ES = {'01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'}
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
-        for _, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
-            render_card(row, "#6c757d")
+        
+        # Renderizar histórico asegurando un key completamente único combinando el prefijo y el índice real de la fila
+        for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
+            render_card(row, "#6c757d", unique_key=f"card_hist_{idx}")
+            
 except Exception as e:
     st.error(f"Error al cargar la aplicación: {e}")
