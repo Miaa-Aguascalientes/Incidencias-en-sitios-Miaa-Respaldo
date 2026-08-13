@@ -30,9 +30,30 @@ st.markdown("""
     .top-title-text { color: #ffffff; font-size: 13px; font-weight: 600; line-height: 1.2; margin: 0; }
     .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
-    .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
-    .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
-    .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
+    
+    .card { background: #111827; padding: 14px; border-radius: 12px; border-left: 6px solid; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-title { font-weight: bold; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px; }
+    .badge-critica { background-color: #ef444433; color: #ef4444; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; border: 1px solid #ef444466; }
+    .badge-status { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+    
+    .diag-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
+    .diag-value { font-size: 14px; color: #f3f4f6; font-weight: 600; margin-bottom: 12px; }
+    
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2937; }
+    .metric-item { display: flex; flex-direction: column; }
+    .metric-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
+    .metric-val { font-size: 13px; color: #f3f4f6; font-weight: 500; margin-top: 2px; }
+    
+    .progress-container { margin-bottom: 12px; background: #0b0f17; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
+    .progress-title { font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
+    .progress-steps { display: flex; justify-content: space-between; align-items: position; position: relative; }
+    .step-item { display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1; }
+    .step-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+    .step-label { font-size: 9px; color: #9ca3af; text-align: center; }
+    
+    /* Expander personalizado estético */
+    .streamlit-expanderHeader { background-color: #1f2937 !important; border-radius: 8px !important; color: white !important; font-size: 13px !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -141,24 +162,78 @@ def render_card(row, color, unique_key, con_mapa=True):
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
+    duracion_str = str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')
     
+    estatus = str(row['ESTATUS']).upper()
+    
+    # Simulación de estado de progreso según estatus para el diseño de la barra visual
+    # Pasos: 1: Diagnóstico, 2: Refacciones, 3: Reparación, 4: Pruebas, 5: Operando
+    step_state = 3 # Por defecto en Reparación para en proceso
+    if "CERRADA" in estatus:
+        step_state = 5
+    elif "PENDIENTE" in estatus:
+        step_state = 1
+
+    def get_step_style(step_num):
+        if step_num < step_state:
+            return "background: #28a745; color: white;", "✓"
+        elif step_num == step_state:
+            return f"background: {color}; color: #050a10;", "⚡"
+        else:
+            return "background: #1f2937; color: #9ca3af; border: 1px solid #374151;", "•"
+
+    s1_style, s1_ico = get_step_style(1)
+    s2_style, s2_ico = get_step_style(2)
+    s3_style, s3_ico = get_step_style(3)
+    s4_style, s4_ico = get_step_style(4)
+    s5_style, s5_ico = get_step_style(5)
+
     st.markdown(f"""
     <div class='card' style='border-left-color: {color};'>
-        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-            <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
-            <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
+        <div class='card-header'>
+            <div class='card-title'>
+                Pozo {row.get('NUM_POZO')} 
+                <span class='badge-critica'>CRÍTICA</span>
+            </div>
+            <div class='badge-status' style='background: {color}22; color: {color}; border: 1px solid {color}66;'>{row['ESTATUS']}</div>
         </div>
-        <div class='label'>Diagnóstico</div>
-        <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-        <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
-            <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
-            <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
+        
+        <div class='diag-label'>Diagnóstico</div>
+        <div class='diag-value'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+        
+        <div class='metrics-grid'>
+            <div class='metric-item'>
+                <div class='metric-label'>👥 Habitantes Afectados</div>
+                <div class='metric-val' style='color: #c084fc;'>12,540</div>
+            </div>
+            <div class='metric-item'>
+                <div class='metric-label'>💧 Prod. Perdida</div>
+                <div class='metric-val' style='color: #38bdf8;'>18.5 LPS</div>
+            </div>
+            <div class='metric-item'>
+                <div class='metric-label'>Inicio</div>
+                <div class='metric-val'>{inicio.strftime('%d/%m %H:%M')}</div>
+            </div>
+            <div class='metric-item'>
+                <div class='metric-label'>Duración</div>
+                <div class='metric-val' style='color: {color};'>{duracion_str}</div>
+            </div>
+        </div>
+
+        <div class='progress-container'>
+            <div class='progress-title'>Progreso</div>
+            <div class='progress-steps'>
+                <div class='step-item'><div class='step-icon' style='{s1_style}'>{s1_ico}</div><div class='step-label'>Diagnóstico</div></div>
+                <div class='step-item'><div class='step-icon' style='{s2_style}'>{s2_ico}</div><div class='step-label'>Refacciones</div></div>
+                <div class='step-item'><div class='step-icon' style='{s3_style}'>{s3_ico}</div><div class='step-label'>Reparación</div></div>
+                <div class='step-item'><div class='step-icon' style='{s4_style}'>{s4_ico}</div><div class='step-label'>Pruebas</div></div>
+                <div class='step-item'><div class='step-icon' style='{s5_style}'>{s5_ico}</div><div class='step-label'>Operando</div></div>
+            </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    with st.expander("🌎 Ver Detalles"):
+    with st.expander("Ver Detalles"):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
