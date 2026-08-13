@@ -11,7 +11,7 @@ from folium.features import DivIcon
 from shapely import wkt
 import re
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, InterfaceError
 
 # Configuración
 mexico_tz = pytz.timezone('America/Mexico_City')
@@ -34,29 +34,43 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Conexiones
+# Conexiones con timeout explícito de conexión
 @st.cache_resource
 def get_engine():
     db = st.secrets["mysql_scada"]
-    return create_engine(f"mysql+pymysql://{db['user']}:{db['password']}@{db['host']}/{db['database']}", 
-                         pool_pre_ping=True, pool_recycle=3600)
+    return create_engine(
+        f"mysql+pymysql://{db['user']}:{db['password']}@{db['host']}/{db['database']}", 
+        pool_pre_ping=True, 
+        pool_recycle=3600,
+        connect_args={'connect_timeout': 15}
+    )
 
 @st.cache_resource
 def get_engine_telemetria():
     db = st.secrets["mysql_telemetria"]
-    return create_engine(f"mysql+pymysql://{db['user']}:{db['password']}@{db['host']}/{db['database']}", 
-                         pool_pre_ping=True, pool_recycle=3600)
+    return create_engine(
+        f"mysql+pymysql://{db['user']}:{db['password']}@{db['host']}/{db['database']}", 
+        pool_pre_ping=True, 
+        pool_recycle=3600,
+        connect_args={'connect_timeout': 15}
+    )
 
 @retry(
-    stop=stop_after_attempt(3), 
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type(OperationalError),
+    stop=stop_after_attempt(5), 
+    wait=wait_exponential(multiplier=1, min=2, max=15),
+    retry=retry_if_exception_type((OperationalError, InterfaceError)),
     reraise=True
 )
 @st.cache_data(ttl=60)
 def get_data():
     return pd.read_sql("SELECT * FROM vw_incidencias_en_pozos ORDER BY FECHA_HORA_INICIO DESC", get_engine())
 
+@retry(
+    stop=stop_after_attempt(3), 
+    wait=wait_exponential(multiplier=1, min=1, max=5),
+    retry=retry_if_exception_type((OperationalError, InterfaceError)),
+    reraise=True
+)
 @st.cache_data(ttl=60)
 def get_geometries(num_pozo):
     query = f"SELECT ST_AsText(geom) as geom_wkt, Col_atl, Sector, Distrito, Supervisor FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
@@ -195,7 +209,6 @@ try:
         </div>
     """, unsafe_allow_html=True)
     
-    # Renderizar activas y cerradas de hoy con keys únicas basadas en su índice del DataFrame original
     for idx, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
@@ -209,9 +222,8 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
-        # Renderizar histórico asegurando un key completamente único combinando el prefijo y el índice real de la fila
         for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d", unique_key=f"card_hist_{idx}")
             
 except Exception as e:
-    st.error(f"Error al cargar la aplicación: {e}")
+    st.error(f"Error de conexión con la base de datos: {e}. Reintentando automáticamente...")
