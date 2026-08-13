@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS unificados y corrección de margen para botones internos
+# Estilos CSS para transformar el expander nativo en una tarjeta integrada perfecta
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -31,27 +31,36 @@ st.markdown("""
     .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
     
-    .card-container { background: #111827; border-radius: 12px; border-left: 6px solid; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); overflow: hidden; }
-    .card-body { padding: 12px 12px 4px 12px; }
-    .card-details { background-color: #0b0f17; border-top: 1px solid #1f2937; padding: 12px; }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
 
-    /* Ajuste para que el botón interno respete los márgenes de la tarjeta */
-    div[data-testid="stButton"] {
-        padding: 0px 12px 8px 12px !important;
-    }
-    div[data-testid="stButton"] > button {
-        background-color: #0b0f17 !important;
+    /* Forzar diseño unificado de tarjeta usando el contenedor expansible nativo */
+    div[data-testid="stExpander"] {
+        background-color: #111827 !important;
+        border-radius: 12px !important;
         border: 1px solid #1f2937 !important;
-        color: #9ca3af !important;
-        border-radius: 8px !important;
-        font-size: 13px !important;
+        margin-bottom: 15px !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        overflow: hidden !important;
     }
-    div[data-testid="stButton"] > button:hover {
+    /* Ocultar bordes internos molestos y ajustar padding */
+    div[data-testid="stExpander"] > details {
+        border: none !important;
+        background-color: transparent !important;
+    }
+    div[data-testid="stExpander"] > details > summary {
+        background-color: #111827 !important;
+        color: #f3f4f6 !important;
+        border-radius: 12px !important;
+        padding: 12px !important;
+    }
+    div[data-testid="stExpander"] > details > summary:hover {
         background-color: #1f2937 !important;
-        color: white !important;
-        border-color: #374151 !important;
+    }
+    div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {
+        background-color: #0b0f17 !important;
+        border-top: 1px solid #1f2937 !important;
+        padding: 15px !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -162,37 +171,23 @@ def render_card(row, color, unique_key, con_mapa=True):
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
     
-    # Abrir contenedor principal de la tarjeta
-    st.markdown(f"""
-    <div class='card-container' style='border-left-color: {color};'>
-        <div class='card-body'>
-            <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-                <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
-                <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
+    # Usamos st.expander estilizado mediante CSS para que funcione como tarjeta con botón desplegable integrado
+    with st.expander(f"Pozo {row.get('NUM_POZO')} — {row['ESTATUS']}"):
+        st.markdown(f"""
+            <div style='border-left: 4px solid {color}; padding-left: 8px; margin-bottom: 8px;'>
+                <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+                    <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
+                </div>
+                <div class='label'>Diagnóstico</div>
+                <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+                <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
+                    <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
+                    <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
+                    <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
+                </div>
             </div>
-            <div class='label'>Diagnóstico</div>
-            <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-            <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px;'>
-                <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
-                <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-                <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Control de estado para el botón desplegable interno
-    state_key = f"open_{unique_key}"
-    if state_key not in st.session_state:
-        st.session_state[state_key] = False
-
-    btn_label = "▲ Ocultar Detalles" if st.session_state[state_key] else "▼ Ver Detalles"
-    if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
-        st.session_state[state_key] = not st.session_state[state_key]
-        st.rerun()
-
-    # Si está abierto, renderizamos el contenido dentro del mismo bloque visual de la tarjeta
-    if st.session_state[state_key]:
-        st.markdown("<div class='card-details'>", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+        
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
@@ -250,10 +245,6 @@ def render_card(row, color, unique_key, con_mapa=True):
                 """, unsafe_allow_html=True)
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Cierre total del contenedor principal de la tarjeta
-    st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
@@ -321,7 +312,8 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
-        for idx, row in historico[historico['FECHA_HORX_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows() if 'FECHA_HORX_FIN' in historico.columns else historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
+        target_col = 'FECHA_HORX_FIN' if 'FECHA_HORX_FIN' in historico.columns else 'FECHA_HORA_FIN'
+        for idx, row in historico[historico[target_col].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d", unique_key=f"card_hist_{idx}", con_mapa=False)
             
 except Exception as e:
