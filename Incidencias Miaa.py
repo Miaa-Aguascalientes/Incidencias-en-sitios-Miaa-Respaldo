@@ -68,6 +68,17 @@ st.markdown("""
     div[data-testid="stToggle"] div[class*="st-ae"] {
         background-color: #00bfff !important;
     }
+
+    /* Forzar texto blanco súper brillante en títulos Markdown e inputs de texto/labels en dispositivos móviles y web */
+    h3, .stMarkdown h3, div[data-testid="stMarkdownContainer"] h3 {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    label, .stSelectbox label, div[data-baseweb="select"] span, .stTextInput label {
+        color: #ffffff !important;
+        font-weight: 600 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
