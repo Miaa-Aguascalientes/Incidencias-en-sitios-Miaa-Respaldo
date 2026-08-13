@@ -155,12 +155,18 @@ def buscar_afectacion_diccionario(nombre_colonia):
     except Exception:
         return None
 
-# Función auxiliar para formatear duración personalizada
+# Función auxiliar para formatear duración en horas y minutos legibles
 def format_duracion(delta):
     dias = delta.days
     horas, resto = divmod(delta.seconds, 3600)
-    minutos, segundos = divmod(resto, 60)
-    return f"{dias} Días con {horas:02}:{minutos:02}:{segundos:02}"
+    minutos, _ = divmod(resto, 60)
+    
+    # Manejo de plurales y formato limpio según requerimiento exacto
+    label_dias = "Día" if dias == 1 else "Días"
+    label_horas = "hora" if horas == 1 else "horas"
+    label_minutos = "minuto" if minutos == 1 else "minutos"
+    
+    return f"{dias} {label_dias} con {horas} {label_horas} y {minutos} {label_minutos}"
 
 @st.fragment
 def dibujar_mapa(gdf, color, unique_key):
@@ -219,7 +225,7 @@ def render_card(row, color, unique_key, con_mapa=True):
         <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
             <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
             <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{format_duracion(duracion)} horas</div></div>
+            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{format_duracion(duracion)}</div></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -373,7 +379,7 @@ if activar_busqueda:
                         st.markdown(f"""
                             <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 8px;'>
                                 <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')}</div>
-                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{format_duracion(fin_dt - inicio_dt)} horas</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
+                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{format_duracion(fin_dt - inicio_dt)}</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
                                 <div style='color: #9ca3af; font-size: 12px; margin-top: 2px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
                             </div>
                         """, unsafe_allow_html=True)
