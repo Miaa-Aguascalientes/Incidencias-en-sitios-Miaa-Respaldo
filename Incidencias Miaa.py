@@ -217,7 +217,7 @@ def render_card(row, color, unique_key, con_mapa=True):
         <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
             <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
             <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
+            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')} horas</div></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -366,7 +366,7 @@ if activar_busqueda:
                             </div>
                         """, unsafe_allow_html=True)
                 
-                # Renderizar resultados cerrados hoy o ayer con duración calculada
+                # Renderizar resultados cerrados hoy o ayer con duración calculada y la palabra horas añadida
                 if not cerradas_en_zona.empty:
                     for _, inc in cerradas_en_zona.iterrows():
                         inicio_dt = pd.to_datetime(inc['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
@@ -377,7 +377,7 @@ if activar_busqueda:
                         st.markdown(f"""
                             <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 8px;'>
                                 <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')}</div>
-                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{duracion_str}</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
+                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{duracion_str} horas</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
                                 <div style='color: #9ca3af; font-size: 12px; margin-top: 2px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
                             </div>
                         """, unsafe_allow_html=True)
