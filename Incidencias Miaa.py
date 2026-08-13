@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS unificados para la tarjeta completa utilizando contenedores
+# Estilos CSS unificados para la tarjeta completa
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -144,9 +144,15 @@ def render_card(row, color, unique_key, con_mapa=True):
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
     
-    # Creamos la tarjeta usando st.container con el estilo visual exacto enmarcado
-    with st.container():
-        st.markdown(f"""
+    state_key = f"open_{unique_key}"
+    if state_key not in st.session_state:
+        st.session_state[state_key] = False
+
+    is_open = st.session_state[state_key]
+    btn_label = "▲ Ocultar Detalles" if is_open else "▼ Ver Detalles"
+
+    # Tarjeta única integrada
+    st.markdown(f"""
         <div style='background: #111827; border-radius: 12px; border-left: 6px solid {color}; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); overflow: hidden;'>
             <div class='card-body'>
                 <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
@@ -155,88 +161,80 @@ def render_card(row, color, unique_key, con_mapa=True):
                 </div>
                 <div class='label'>Diagnóstico</div>
                 <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-                <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px;'>
+                <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 4px;'>
                     <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
                     <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
                     <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
-        
-        # Botón integrado nativamente dentro del flujo de la tarjeta
-        state_key = f"open_{unique_key}"
-        if state_key not in st.session_state:
-            st.session_state[state_key] = False
+    """, unsafe_allow_html=True)
 
-        btn_label = "▲ Ocultar Detalles" if st.session_state[state_key] else "▼ Ver Detalles"
-        if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
-            st.session_state[state_key] = not st.session_state[state_key]
-            st.rerun()
+    if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
+        st.session_state[state_key] = not st.session_state[state_key]
+        st.rerun()
 
-        # Si está abierto, renderizamos los detalles con su fondo oscuro interno
-        if st.session_state[state_key]:
-            st.markdown("<div class='card-details'>", unsafe_allow_html=True)
-            if con_mapa:
-                gdf = get_geometries(row.get('NUM_POZO'))
-                if gdf is not None and not gdf.empty:
-                    st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-                    dibujar_mapa(gdf, color, unique_key)
-                    sectores = ', '.join(gdf['Sector'].dropna().unique())
-                    distritos = ', '.join(gdf['Distrito'].dropna().unique())
-                    raw_supervisores = gdf['Supervisor'].dropna().unique()
-                    supervisores_list = []
-                    for item in raw_supervisores:
-                        items = [s.strip() for s in item.split(',') if s.strip()]
-                        supervisores_list.extend([format_supervisor(s) for s in items])
-                    supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
-                    st.markdown(f"""
-                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 0px; margin-top: 15px;'>
-                                <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                                <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
-                            </div>   
+    if is_open:
+        st.markdown("<div class='card-details'>", unsafe_allow_html=True)
+        if con_mapa:
+            gdf = get_geometries(row.get('NUM_POZO'))
+            if gdf is not None and not gdf.empty:
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                dibujar_mapa(gdf, color, unique_key)
+                sectores = ', '.join(gdf['Sector'].dropna().unique())
+                distritos = ', '.join(gdf['Distrito'].dropna().unique())
+                raw_supervisores = gdf['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
-                    """, unsafe_allow_html=True)
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            df_info = get_colonias_info(row.get('NUM_POZO'))
+            if df_info is not None and not df_info.empty:
+                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                sectores = ', '.join(df_info['Sector'].dropna().unique())
+                distritos = ', '.join(df_info['Distrito'].dropna().unique())
+                raw_supervisores = df_info['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
+                    </div>
+                """, unsafe_allow_html=True)
             else:
-                df_info = get_colonias_info(row.get('NUM_POZO'))
-                if df_info is not None and not df_info.empty:
-                    colonias = ', '.join(df_info['Col_atl'].dropna().unique())
-                    sectores = ', '.join(df_info['Sector'].dropna().unique())
-                    distritos = ', '.join(df_info['Distrito'].dropna().unique())
-                    raw_supervisores = df_info['Supervisor'].dropna().unique()
-                    supervisores_list = []
-                    for item in raw_supervisores:
-                        items = [s.strip() for s in item.split(',') if s.strip()]
-                        supervisores_list.extend([format_supervisor(s) for s in items])
-                    supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
-                    
-                    st.markdown(f"""
-                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                            <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 0px; margin-top: 15px;'>
-                                <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                                <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
-                            </div>   
-                        </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-            
-        # Cierre del div principal de la tarjeta dentro del contenedor
+                st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
