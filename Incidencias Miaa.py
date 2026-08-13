@@ -112,6 +112,15 @@ def get_colonias_info(num_pozo):
     except Exception:
         return None
 
+@st.cache_data(ttl=60)
+def buscar_afectacion_diccionario(nombre_colonia):
+    query = f"SELECT Col_atl, Sector, Distrito, Pozos, Supervisor FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
+    try:
+        df = pd.read_sql(query, get_engine_telemetria())
+        return df if not df.empty else None
+    except Exception:
+        return None
+
 @st.fragment
 def dibujar_mapa(gdf, color, unique_key):
     m = folium.Map(
@@ -250,36 +259,51 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación por Colonia
+# Módulo de Búsqueda de Afectación directo de la Base de Datos (Diccionario_colonias)
 st.markdown("### 🔍 Consultar Afectación por Colonia")
 colonia_input = st.text_input("Ingresa el nombre de la colonia a buscar:", placeholder="Ej. CANTERAS")
 
 if colonia_input:
-    try:
-        # Cargar la hoja 'Colonias' del archivo Excel de afectaciones
-        df_afectacion = pd.read_excel('Afectacion por colonias.xlsx', sheet_name='Colonias')
+    df_col_db = buscar_afectacion_diccionario(colonia_input)
+    if df_col_db is None or df_col_db.empty:
+        st.warning(f"No se encontró información registrada para la colonia: '{colonia_input}' en el diccionario.")
+    else:
+        st.success(f"Se encontraron registros de afectación para **{colonia_input.upper()}**:")
         
-        # Filtrar las filas que coincidan con el nombre de la colonia ingresada
-        filtro_col = df_afectacion[df_afectacion['_Sector'].str.contains(colonia_input, case=False, na=False)].copy()
-        
-        if filtro_col.empty:
-            st.warning(f"No se encontró información de afectación registrada para la colonia: '{colonia_input}'.")
-        else:
-            # Limpiar y convertir el porcentaje de afectación a numérico
-            filtro_col['Afectacion_Num'] = (
-                filtro_col['% de Afectacion']
-                .astype(str)
-                .str.replace('%', '', regex=False)
-                .str.strip()
-            )
-            filtro_col['Afectacion_Num'] = pd.to_numeric(filtro_col['Afectacion_Num'], errors='coerce').fillna(0)
-            total_afectacion = filtro_col['Afectacion_Num'].sum()
+        # Obtener pozos asociados a esta colonia y cruzarlos con las incidencias activas actuales
+        try:
+            df_incidencias_activas = get_data()
+            df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
             
-            st.success(f"La afectación total acumulada para **{colonia_input.upper()}** es: **{total_afectacion:.2f}%**")
-            with st.expander("Ver detalles de registros de afectación"):
-                st.dataframe(filtro_col[['ID', '_Sector', '_Caudal', '% de Afectacion']])
-    except Exception as e:
-        st.error(f"No se pudo consultar el archivo de afectación de colonias: {e}")
+            # Revisar si alguno de los pozos que abastecen esta colonia tiene una incidencia activa
+            pozos_afectados = []
+            for pozos_str in df_col_db['Pozos'].dropna():
+                # Extraer números de pozos de la cadena (ej. 'Pozo 01, Pozo 02' o similares)
+                nums = re.findall(r'\d+', str(pozos_str))
+                pozos_afectados.extend([int(n) for n in nums])
+            
+            pozos_afectados = list(set(pozos_afectados))
+            
+            # Filtrar incidencias activas que coincidan con los pozos de la colonia
+            incidencias_en_zona = df_activas_filtradas[df_activas_filtradas['NUM_POZO'].isin(pozos_afectados)]
+            
+            if not incidencias_en_zona.empty:
+                st.error(f"⚠️ **La colonia presenta afectación actualmente.** Hay {len(incidencias_en_zona)} incidencia(s) activa(s) en los pozos asociados.")
+                for _, inc in incidencias_en_zona.iterrows():
+                    st.markdown(f"""
+                        <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #FF4C4C; margin-bottom: 8px;'>
+                            <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')} - Estatus: {inc.get('ESTATUS')}</div>
+                            <div style='color: #9ca3af; font-size: 12px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+                            <div style='color: #9ca3af; font-size: 12px;'>Inicio: {inc.get('FECHA_HORA_INICIO')}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
+        except Exception as e:
+            st.info(f"Colonia encontrada en el diccionario, pero ocurrió un error al validar pozos activos: {e}")
+
+        with st.expander("Ver detalles en el Diccionario de Colonias"):
+            st.dataframe(df_col_db[['Col_atl', 'Sector', 'Distrito', 'Pozos', 'Supervisor']])
 
 st.markdown("---")
 
