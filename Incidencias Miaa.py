@@ -151,25 +151,14 @@ def render_card(row, color, unique_key, con_mapa=True):
     st.markdown(f"""
         <div class='card' style='border-left-color: {color};'>
             <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-                <div style='font-weight: bold; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px;'>
-                    Pozo {row.get('NUM_POZO')} 
-                    <span style='background-color: #ef444433; color: #ef4444; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; border: 1px solid #ef444466;'>CRÍTICA</span>
-                </div>
+                <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
                 <div style='padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; background: {color}22; color: {color}; border: 1px solid {color}66;'>{row['ESTATUS']}</div>
             </div>
             
             <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;'>Diagnóstico</div>
             <div style='font-size: 14px; color: #f3f4f6; font-weight: 600; margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
             
-            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2937;'>
-                <div>
-                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>👥 Habitantes Afectados</div>
-                    <div style='font-size: 13px; color: #c084fc; font-weight: 500; margin-top: 2px;'>12,540</div>
-                </div>
-                <div>
-                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>💧 Prod. Perdida</div>
-                    <div style='font-size: 13px; color: #38bdf8; font-weight: 500; margin-top: 2px;'>18.5 LPS</div>
-                </div>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2937;'>
                 <div>
                     <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Inicio</div>
                     <div style='font-size: 13px; color: #f3f4f6; font-weight: 500; margin-top: 2px;'>{inicio.strftime('%d/%m %H:%M')}</div>
