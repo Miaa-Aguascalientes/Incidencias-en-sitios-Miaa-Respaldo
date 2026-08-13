@@ -85,6 +85,15 @@ def get_geometries(num_pozo):
         return None
     return None
 
+@st.cache_data(ttl=60)
+def get_colonias_info(num_pozo):
+    query = f"SELECT Col_atl, Sector, Distrito, Supervisor FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
+    try:
+        df = pd.read_sql(query, get_engine_telemetria())
+        return df if not df.empty else None
+    except Exception:
+        return None
+
 @st.fragment
 def dibujar_mapa(gdf, color, unique_key):
     m = folium.Map(
@@ -126,7 +135,7 @@ def format_supervisor(text):
             </div>"""
     return text
 
-def render_card(row, color, unique_key):
+def render_card(row, color, unique_key, con_mapa=True):
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
@@ -146,33 +155,66 @@ def render_card(row, color, unique_key):
         </div>
     </div>
     """, unsafe_allow_html=True)
+    
     with st.expander("🌎 Ver Detalles"):
-        gdf = get_geometries(row.get('NUM_POZO'))
-        if gdf is not None and not gdf.empty:
-            st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-            dibujar_mapa(gdf, color, unique_key)
-            sectores = ', '.join(gdf['Sector'].dropna().unique())
-            distritos = ', '.join(gdf['Distrito'].dropna().unique())
-            raw_supervisores = gdf['Supervisor'].dropna().unique()
-            supervisores_list = []
-            for item in raw_supervisores:
-                items = [s.strip() for s in item.split(',') if s.strip()]
-                supervisores_list.extend([format_supervisor(s) for s in items])
-            supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
-            st.markdown(f"""
-                <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                    <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                        <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
+        if con_mapa:
+            gdf = get_geometries(row.get('NUM_POZO'))
+            if gdf is not None and not gdf.empty:
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                dibujar_mapa(gdf, color, unique_key)
+                sectores = ', '.join(gdf['Sector'].dropna().unique())
+                distritos = ', '.join(gdf['Distrito'].dropna().unique())
+                raw_supervisores = gdf['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
                     </div>
-                    <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                        <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                """, unsafe_allow_html=True)
+        else:
+            # Modo histórico: Solo texto y nombres de colonias, sin polígonos ni mapas
+            df_info = get_colonias_info(row.get('NUM_POZO'))
+            if df_info is not None and not df_info.empty:
+                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                sectores = ', '.join(df_info['Sector'].dropna().unique())
+                distritos = ', '.join(df_info['Distrito'].dropna().unique())
+                raw_supervisores = df_info['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
                     </div>
-                    <div style='padding: 0px; margin-top: 15px;'>
-                        <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                        <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
-                    </div>   
-                </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""<div class="logo-container"><img src="https://raw.githubusercontent.com/Miaa-Aguascalientes/Logos/38504978c8f77a4dac38ad476f74dbdee6af2cad/LogoMIAA.svg" width="200"></div>""", unsafe_allow_html=True)
@@ -209,10 +251,11 @@ try:
         </div>
     """, unsafe_allow_html=True)
     
+    # Activas y cerradas de hoy SÍ muestran mapa (con_mapa=True)
     for idx, row in pd.concat([activas, cerradas_hoy]).iterrows():
         status = str(row['ESTATUS']).upper()
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
-        render_card(row, color, unique_key=f"card_hoy_{idx}")
+        render_card(row, color, unique_key=f"card_hoy_{idx}", con_mapa=True)
         
     st.markdown("---")
     st.subheader("📅 Histórico")
@@ -222,8 +265,9 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
+        # Histórico NO muestra mapas ni polígonos, solo datos textuales (con_mapa=False)
         for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
-            render_card(row, "#6c757d", unique_key=f"card_hist_{idx}")
+            render_card(row, "#6c757d", unique_key=f"card_hist_{idx}", con_mapa=False)
             
 except Exception as e:
     st.error(f"Error de conexión con la base de datos: {e}. Reintentando automáticamente...")
