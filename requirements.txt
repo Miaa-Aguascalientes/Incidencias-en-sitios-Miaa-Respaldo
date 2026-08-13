@@ -9,5 +9,10 @@ plotly
 streamlit-autorefresh
 bcrypt
 shapely
-geopandas
+pydeck
+pymysql
 pytz
+geopandas
+shapely
+tenacity
+
