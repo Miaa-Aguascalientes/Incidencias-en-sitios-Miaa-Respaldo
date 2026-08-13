@@ -64,6 +64,15 @@ st.markdown("""
         background-color: #00bfff !important;
     }
 
+    /* Forzar color azul en el switch/toggle activo (Streamlit base elements) */
+    div.stToggle div[data-baseweb="checkbox"] div[aria-checked="true"] {
+        background-color: #00bfff !important;
+    }
+    
+    input[type="checkbox"]:checked + div {
+        background-color: #00bfff !important;
+    }
+
     h3, .stMarkdown h3, div[data-testid="stMarkdownContainer"] h3 {
         color: #ffffff !important;
         font-weight: 700 !important;
