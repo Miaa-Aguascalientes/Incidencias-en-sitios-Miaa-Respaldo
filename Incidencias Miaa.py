@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS unificados para la tarjeta completa
+# Estilos CSS unificados y corrección de margen para botones internos
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -36,6 +36,23 @@ st.markdown("""
     .card-details { background-color: #0b0f17; border-top: 1px solid #1f2937; padding: 12px; }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
+
+    /* Ajuste para que el botón interno respete los márgenes de la tarjeta */
+    div[data-testid="stButton"] {
+        padding: 0px 12px 8px 12px !important;
+    }
+    div[data-testid="stButton"] > button {
+        background-color: #0b0f17 !important;
+        border: 1px solid #1f2937 !important;
+        color: #9ca3af !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+    }
+    div[data-testid="stButton"] > button:hover {
+        background-color: #1f2937 !important;
+        color: white !important;
+        border-color: #374151 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -155,7 +172,7 @@ def render_card(row, color, unique_key, con_mapa=True):
             </div>
             <div class='label'>Diagnóstico</div>
             <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-            <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;'>
+            <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 8px;'>
                 <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
                 <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
                 <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
@@ -168,7 +185,7 @@ def render_card(row, color, unique_key, con_mapa=True):
     if state_key not in st.session_state:
         st.session_state[state_key] = False
 
-    btn_label = "▲ Ocultar Detalles" if st.session_state[state_key] else "▼ 🌎 Ver Detalles"
+    btn_label = "▲ Ocultar Detalles" if st.session_state[state_key] else "▼ Ver Detalles"
     if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
         st.session_state[state_key] = not st.session_state[state_key]
         st.rerun()
@@ -179,7 +196,7 @@ def render_card(row, color, unique_key, con_mapa=True):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
@@ -304,7 +321,7 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
-        for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
+        for idx, row in historico[historico['FECHA_HORX_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows() if 'FECHA_HORX_FIN' in historico.columns else historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d", unique_key=f"card_hist_{idx}", con_mapa=False)
             
 except Exception as e:
