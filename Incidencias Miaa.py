@@ -173,8 +173,8 @@ try:
     activas = df[~df['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
     cerradas_hoy = df[(df['ESTATUS'].str.contains('CERRADA', case=False, na=False)) & (df['FECHA_HORA_FIN'].dt.date == hoy)]
     
-    # El histórico contiene todas las cerradas para ser filtradas por el selectbox
-    historico = df[df['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
+    # Filtramos para asegurar que solo agarre registros cerrados que SÍ tengan fecha de fin válida
+    historico = df[df['ESTATUS'].str.contains('CERRADA', case=False, na=False) & df['FECHA_HORA_FIN'].notnull()].copy()
     
     n_procesos = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False)])
     n_pendientes = len(activas[activas['ESTATUS'].str.contains('PENDIENTE', case=False, na=False)])
@@ -205,7 +205,6 @@ try:
     st.markdown("---")
     st.subheader("📅 Histórico")
     if not historico.empty:
-        # Se agrupa por fecha de cierre para asegurar que todo aparezca
         opciones_raw = sorted(historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m').unique(), reverse=True)
         MESES_ES = {'01': 'Enero', '02': 'Febrero', '03': 'Marzo', '04': 'Abril', '05': 'Mayo', '06': 'Junio', '07': 'Julio', '08': 'Agosto', '09': 'Septiembre', '10': 'Octubre', '11': 'Noviembre', '12': 'Diciembre'}
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
@@ -213,4 +212,4 @@ try:
         for _, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d")
 except Exception as e:
-    st.error("Error al cargar la aplicación. Reintentando conexión con la base de datos...")
+    st.error(f"Error al cargar la aplicación: {e}")
