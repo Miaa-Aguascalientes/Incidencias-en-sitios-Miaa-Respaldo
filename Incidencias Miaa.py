@@ -25,9 +25,10 @@ st.markdown("""
     .stApp { background-color: #050a10 !important; }
     #MainMenu, header, footer { visibility: hidden !important; height: 0 !important; }
     .block-container { padding-top: 0rem !important; margin-top: -10px !important; }
-    .top-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+    .top-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 10px; }
     .top-logo-group { display: flex; align-items: center; gap: 12px; }
-    .top-title-text { color: #ffffff; font-size: 15px; font-weight: 700; line-height: 1.2; margin: 0; }
+    .top-title-text { color: #ffffff; font-size: 18px; font-weight: 700; line-height: 1.2; margin: 0; }
+    .blue-divider { border-top: 2px solid #00bfff; margin-bottom: 20px; }
     .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
@@ -294,6 +295,7 @@ st.markdown("""
             <div class="top-title-text">Registro de eventos</div>
         </div>
     </div>
+    <div class="blue-divider"></div>
 """, unsafe_allow_html=True)
 
 activar_busqueda = st.toggle("Buscador de colonias", value=False)
@@ -420,7 +422,6 @@ try:
         color = "#FFD700" if "PROCESO" in status else ("#FF4C4C" if "PENDIENTE" in status else "#28a745")
         render_card(row, color, unique_key=f"card_hoy_{idx}", con_mapa=True)
         
-    st.markdown("---")
     st.subheader("📅 Histórico")
     if not historico.empty:
         opciones_raw = sorted(historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m').unique(), reverse=True)
