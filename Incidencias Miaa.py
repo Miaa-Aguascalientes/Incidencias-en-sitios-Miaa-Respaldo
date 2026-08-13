@@ -268,57 +268,58 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación con st.selectbox precargado (sin banner verde ni expander de diccionario)
-st.markdown("### 🔍 Consultar Afectación por Colonia")
+# Módulo de Búsqueda de Afectación controlado por un st.toggle
+activar_busqueda = st.toggle("Activar", value=False)
 
-lista_colonias = get_todas_colonias()
-colonia_input = st.selectbox(
-    "Selecciona o escribe el nombre de la colonia:",
-    options=[""] + lista_colonias,
-    format_func=lambda x: "Selecciona una colonia..." if x == "" else x
-)
+if activar_busqueda:
+    st.markdown("### 🔍 Consultar Afectación por Colonia")
+    lista_colonias = get_todas_colonias()
+    colonia_input = st.selectbox(
+        "Selecciona o escribe el nombre de la colonia:",
+        options=[""] + lista_colonias,
+        format_func=lambda x: "Selecciona una colonia..." if x == "" else x
+    )
 
-if colonia_input:
-    df_col_db = buscar_afectacion_diccionario(colonia_input)
-    if df_col_db is None or df_col_db.empty:
-        st.warning(f"No se encontró información registrada para la colonia: '{colonia_input}' en el diccionario.")
-    else:
-        try:
-            df_incidencias_activas = get_data()
-            df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
-            
-            pozos_asociados = set()
-            for pozos_str in df_col_db['Pozos'].dropna():
-                tokens = re.findall(r'([A-Za-z]?\s*-?\s*\d+[A-Za-z]?)', str(pozos_str))
-                for t in tokens:
-                    limpio = t.replace(' ', '').upper()
-                    if limpio:
-                        pozos_asociados.add(limpio)
-            
-            incidencias_en_zona = pd.DataFrame()
-            if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
-                def coincide_pozo(val):
-                    v_str = str(val).replace(' ', '').upper()
-                    variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
-                    return bool(variants.intersection(pozos_asociados))
+    if colonia_input:
+        df_col_db = buscar_afectacion_diccionario(colonia_input)
+        if df_col_db is None or df_col_db.empty:
+            st.warning(f"No se encontró información registrada para la colonia: '{colonia_input}' en el diccionario.")
+        else:
+            try:
+                df_incidencias_activas = get_data()
+                df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
                 
-                mask = df_activas_filtradas['NUM_POZO'].apply(coincide_pozo)
-                incidencias_en_zona = df_activas_filtradas[mask]
-            
-            if not incidencias_en_zona.empty:
-                st.error(f"⚠️ **La colonia presenta afectación actualmente.** Hay {len(incidencias_en_zona)} incidencia(s) activa(s) en los pozos asociados.")
-                for _, inc in incidencias_en_zona.iterrows():
-                    st.markdown(f"""
-                        <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #FF4C4C; margin-bottom: 8px;'>
-                            <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')} - Estatus: {inc.get('ESTATUS')}</div>
-                            <div style='color: #9ca3af; font-size: 12px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-                            <div style='color: #9ca3af; font-size: 12px;'>Inicio: {inc.get('FECHA_HORA_INICIO')}</div>
-                        </div>
-                    """, unsafe_allow_html=True)
-            else:
-                st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
-        except Exception as e:
-            st.error(f"Error al validar pozos activos para la colonia: {e}")
+                pozos_asociados = set()
+                for pozos_str in df_col_db['Pozos'].dropna():
+                    tokens = re.findall(r'([A-Za-z]?\s*-?\s*\d+[A-Za-z]?)', str(pozos_str))
+                    for t in tokens:
+                        limpio = t.replace(' ', '').upper()
+                        if limpio:
+                            pozos_asociados.add(limpio)
+                
+                incidencias_en_zona = pd.DataFrame()
+                if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
+                    def coincide_pozo(val):
+                        v_str = str(val).replace(' ', '').upper()
+                        variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
+                        return bool(variants.intersection(pozos_asociados))
+                    
+                    mask = df_activas_filtradas['NUM_POZO'].apply(coincide_pozo)
+                    incidencias_en_zona = df_activas_filtradas[mask]
+                
+                if not incidencias_en_zona.empty:
+                    for _, inc in incidencias_en_zona.iterrows():
+                        st.markdown(f"""
+                            <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #FF4C4C; margin-bottom: 8px;'>
+                                <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')} - Estatus: {inc.get('ESTATUS')}</div>
+                                <div style='color: #9ca3af; font-size: 12px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+                                <div style='color: #9ca3af; font-size: 12px;'>Inicio: {inc.get('FECHA_HORA_INICIO')}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
+            except Exception as e:
+                st.error(f"Error al validar pozos activos para la colonia: {e}")
 
 st.markdown("---")
 
