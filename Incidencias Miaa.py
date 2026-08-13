@@ -146,7 +146,6 @@ def format_supervisor(text):
     if match:
         num = f"{match.group(1)}{match.group(2)}{match.group(3)}{match.group(4)}"
         tel_full = f"52{num}"
-        # Forzar texto del supervisor en blanco brillante
         return text.replace(match.group(0), f"<strong style='color: #ffffff;'>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 8px; display: flex; gap: 10px;'>
                 <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 40px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
@@ -179,7 +178,6 @@ def render_card(row, color, unique_key, con_mapa=True):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                # Colonias con color blanco muy brillante
                 st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
@@ -251,6 +249,39 @@ st.markdown("""
         <h1 class="section-title">Registro de Incidencias</h1>
     </div>
 """, unsafe_allow_html=True)
+
+# Módulo de Búsqueda de Afectación por Colonia
+st.markdown("### 🔍 Consultar Afectación por Colonia")
+colonia_input = st.text_input("Ingresa el nombre de la colonia a buscar:", placeholder="Ej. CANTERAS")
+
+if colonia_input:
+    try:
+        # Cargar la hoja 'Colonias' del archivo Excel de afectaciones
+        df_afectacion = pd.read_excel('Afectacion por colonias.xlsx', sheet_name='Colonias')
+        
+        # Filtrar las filas que coincidan con el nombre de la colonia ingresada
+        filtro_col = df_afectacion[df_afectacion['_Sector'].str.contains(colonia_input, case=False, na=False)].copy()
+        
+        if filtro_col.empty:
+            st.warning(f"No se encontró información de afectación registrada para la colonia: '{colonia_input}'.")
+        else:
+            # Limpiar y convertir el porcentaje de afectación a numérico
+            filtro_col['Afectacion_Num'] = (
+                filtro_col['% de Afectacion']
+                .astype(str)
+                .str.replace('%', '', regex=False)
+                .str.strip()
+            )
+            filtro_col['Afectacion_Num'] = pd.to_numeric(filtro_col['Afectacion_Num'], errors='coerce').fillna(0)
+            total_afectacion = filtro_col['Afectacion_Num'].sum()
+            
+            st.success(f"La afectación total acumulada para **{colonia_input.upper()}** es: **{total_afectacion:.2f}%**")
+            with st.expander("Ver detalles de registros de afectación"):
+                st.dataframe(filtro_col[['ID', '_Sector', '_Caudal', '% de Afectacion']])
+    except Exception as e:
+        st.error(f"No se pudo consultar el archivo de afectación de colonias: {e}")
+
+st.markdown("---")
 
 try:
     df = get_data()
