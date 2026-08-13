@@ -55,22 +55,18 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    div[data-testid="stToggle"] div[data-baseweb="checkbox"] input:checked + div {
-        background-color: #00bfff !important;
+    /* Forzar color azul turquesa fuerte en el switch/toggle de Streamlit (usando selectores profundos de BaseWeb) */
+    div[data-baseweb="checkbox"] div[class*="st-"] {
+        background-color: #00d2ff !important;
     }
     
+    div[data-testid="stToggle"] input:checked ~ div,
     div[data-testid="stToggle"] span[data-baseweb="tag"],
-    div[data-testid="stToggle"] div[class*="st-ae"] {
-        background-color: #00bfff !important;
-    }
-
-    /* Forzar color azul en el switch/toggle activo (Streamlit base elements) */
-    div.stToggle div[data-baseweb="checkbox"] div[aria-checked="true"] {
-        background-color: #00bfff !important;
-    }
-    
-    input[type="checkbox"]:checked + div {
-        background-color: #00bfff !important;
+    div[data-testid="stToggle"] div[role="checkbox"][aria-checked="true"],
+    div[data-baseweb="checkbox"] input:checked + div,
+    .stToggle div[data-baseweb="checkbox"] > div:first-child {
+        background-color: #00d2ff !important;
+        border-color: #00d2ff !important;
     }
 
     h3, .stMarkdown h3, div[data-testid="stMarkdownContainer"] h3 {
@@ -401,7 +397,7 @@ try:
     historico = df[df['ESTATUS'].str.contains('CERRADA', case=False, na=False) & df['FECHA_HORA_FIN'].notnull()].copy()
     
     n_procesos = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False)])
-    n_pendientes = len(activas[activas['ESTATUS'].str.contains('PENDIENTE', case=False, na=False)])
+    n_pendientes = len(activas[activas['ESTATUS'].str.contains('PROCESO', case=False, na=False) == False])
     n_cerradas = len(cerradas_hoy)
     n_total = len(activas) + len(cerradas_hoy)
     
