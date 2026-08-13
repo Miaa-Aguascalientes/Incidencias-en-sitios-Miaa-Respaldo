@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS generales con selectores reforzados para móviles y WebKit
+# Estilos CSS
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -34,20 +34,17 @@ st.markdown("""
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
     
+    /* Forzar texto blanco brillante en el Expander (Ver Detalles), Colonias y Supervisores */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span, 
     div[data-testid="stExpander"] summary {
         color: #ffffff !important;
         font-weight: 600 !important;
     }
-    
-    div[data-testid="stExpander"] {
-        -webkit-appearance: none;
-        box-sizing: border-box;
-    }
     </style>
 """, unsafe_allow_html=True)
 
+# Conexiones con timeout explícito de conexión
 @st.cache_resource
 def get_engine():
     db = st.secrets["mysql_scada"]
@@ -120,15 +117,14 @@ def dibujar_mapa(gdf, color, unique_key):
     folium.TileLayer("CartoDB dark_matter", name="CartoDB dark_matter", attr="&copy; CartoDB").add_to(m)
     folium.GeoJson(gdf, style_function=lambda x: {'fillColor': color, 'color': color, 'weight': 2, 'fillOpacity': 0.4}).add_to(m)
     
-    if len(gdf) <= 10:
-        for _, r in gdf.iterrows():
-            folium.Marker(
-                location=[r.geometry.centroid.y, r.geometry.centroid.x],
-                icon=DivIcon(
-                    icon_anchor=(-5, 10), 
-                    html=f'<div style="font-size: 8px; color: white; background: rgba(0,0,0,0.7); padding: 2px; white-space: nowrap; border-radius: 3px;">{r["Col_atl"]}</div>'
-                )
-            ).add_to(m)
+    for _, r in gdf.iterrows():
+        folium.Marker(
+            location=[r.geometry.centroid.y, r.geometry.centroid.x],
+            icon=DivIcon(
+                icon_anchor=(-5, 10), 
+                html=f'<div style="font-size: 8px; color: white; background: rgba(0,0,0,0.7); padding: 2px; white-space: nowrap; border-radius: 3px;">{r["Col_atl"]}</div>'
+            )
+        ).add_to(m)
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
@@ -142,6 +138,7 @@ def format_supervisor(text):
     if match:
         num = f"{match.group(1)}{match.group(2)}{match.group(3)}{match.group(4)}"
         tel_full = f"52{num}"
+        # Forzar texto del supervisor en blanco brillante
         return text.replace(match.group(0), f"<strong style='color: #ffffff;'>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 8px; display: flex; gap: 10px;'>
                 <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 40px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
@@ -171,34 +168,12 @@ def render_card(row, color, unique_key, con_mapa=True):
     """, unsafe_allow_html=True)
     
     with st.expander("🌎 Ver Detalles"):
-        st.markdown(f"""
-        <style>
-            div[data-testid="stExpander"] {{
-                border: 2px solid {color} !important;
-                border-radius: 10px !important;
-                background-color: #0b131f !important;
-            }}
-            div[data-testid="stExpander"] > div {{
-                background-color: #0b131f !important;
-            }}
-        </style>
-        """, unsafe_allow_html=True)
-        
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                colonias_str = ', '.join(gdf['Col_atl'].unique())
-                st.markdown(f"""
-                    <div style='margin-bottom: 8px; font-size: 12px; color: #9ca3af;'>
-                        <strong>Colonias:</strong> 
-                        <div style='max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; background: #050a10; padding: 4px; border-radius: 4px; border: 1px solid #374151; margin-top: 4px;'>
-                            {colonias_str}
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-                
+                # Colonias con color blanco muy brillante
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
-                
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
                 raw_supervisores = gdf['Supervisor'].dropna().unique()
@@ -207,7 +182,6 @@ def render_card(row, color, unique_key, con_mapa=True):
                     items = [s.strip() for s in item.split(',') if s.strip()]
                     supervisores_list.extend([format_supervisor(s) for s in items])
                 supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; color: #ffffff;'>• {s}</div>" for s in supervisores_list])
-                
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
@@ -237,12 +211,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'>
-                            <strong>Colonias:</strong> 
-                            <div style='max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; background: #050a10; padding: 4px; border-radius: 4px; border: 1px solid #374151; margin-top: 4px;'>
-                                {colonias if colonias else 'N/A'}
-                            </div>
-                        </div>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
