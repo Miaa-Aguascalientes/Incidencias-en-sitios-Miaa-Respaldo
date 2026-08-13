@@ -168,10 +168,12 @@ def render_card(row, color, unique_key, con_mapa=True):
     """, unsafe_allow_html=True)
     
     with st.expander("🌎 Ver Detalles"):
+        # Definimos el estilo del contenedor dinámico basado en el color del estado
+        container_style = f"padding: 10px; background: {color}11; border-radius: 8px; border: 1px solid {color}; margin-top: 10px;"
+        
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                # Colonias con color blanco muy brillante
                 st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
@@ -183,17 +185,11 @@ def render_card(row, color, unique_key, con_mapa=True):
                     supervisores_list.extend([format_supervisor(s) for s in items])
                 supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; color: #ffffff;'>• {s}</div>" for s in supervisores_list])
                 st.markdown(f"""
-                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 0px; margin-top: 15px;'>
-                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
-                        </div>   
+                    <div style='{container_style}'>
+                        <div class='label'>Sector</div><div class='value' style='margin-bottom: 8px;'>{sectores if sectores else 'N/A'}</div>
+                        <div class='label'>Distrito</div><div class='value' style='margin-bottom: 8px;'>{distritos if distritos else 'N/A'}</div>
+                        <div class='label' style='margin-bottom: 10px;'>Supervisores</div>
+                        <div>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
                     </div>
                 """, unsafe_allow_html=True)
         else:
@@ -210,18 +206,12 @@ def render_card(row, color, unique_key, con_mapa=True):
                 supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px; color: #ffffff;'>• {s}</div>" for s in supervisores_list])
                 
                 st.markdown(f"""
-                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                    <div style='{container_style}'>
                         <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 0px; margin-top: 15px;'>
-                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
-                        </div>   
+                        <div class='label' style='margin-top: 8px;'>Sector</div><div class='value' style='margin-bottom: 8px;'>{sectores if sectores else 'N/A'}</div>
+                        <div class='label'>Distrito</div><div class='value' style='margin-bottom: 8px;'>{distritos if distritos else 'N/A'}</div>
+                        <div class='label' style='margin-bottom: 10px;'>Supervisores</div>
+                        <div>{supervisores_html if supervisores_list else '<span style="color: #ffffff;">N/A</span>'}</div>
                     </div>
                 """, unsafe_allow_html=True)
             else:
