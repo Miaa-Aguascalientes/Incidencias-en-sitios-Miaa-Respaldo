@@ -254,14 +254,14 @@ st.markdown("""
 
 st.markdown("""
     <div class="section-header">
-        <img src="https://github.com/Miaa-Aguascalientes/Logos/blob/main/procesodelpecado.gif?raw=true" width="40">
+        <img src="https://github.com/Miaa-Aguascalientes/Logos/badge.svg?raw=true" width="40" onerror="this.style.display='none'">
         <h1 class="section-title">Registro de Incidencias</h1>
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación directo de la Base de Datos (Diccionario_colonias)
+# Módulo de Búsqueda de Afectación directo de la Base de Datos (Diccionario_colonias) con cruce robusto de pozos
 st.markdown("### 🔍 Consultar Afectación por Colonia")
-colonia_input = st.text_input("Ingresa el nombre de la colonia a buscar:", placeholder="Ej. CANTERAS")
+colonia_input = st.text_input("Ingresa el nombre de la colonia a buscar:", placeholder="Ej. TROJES DEL COBANO")
 
 if colonia_input:
     df_col_db = buscar_afectacion_diccionario(colonia_input)
@@ -270,22 +270,31 @@ if colonia_input:
     else:
         st.success(f"Se encontraron registros de afectación para **{colonia_input.upper()}**:")
         
-        # Obtener pozos asociados a esta colonia y cruzarlos con las incidencias activas actuales
         try:
             df_incidencias_activas = get_data()
             df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
             
-            # Revisar si alguno de los pozos que abastecen esta colonia tiene una incidencia activa
-            pozos_afectados = []
+            # Extraer todos los pozos listados en la columna 'Pozos' del diccionario para esta colonia
+            pozos_asociados = set()
             for pozos_str in df_col_db['Pozos'].dropna():
-                # Extraer números de pozos de la cadena (ej. 'Pozo 01, Pozo 02' o similares)
-                nums = re.findall(r'\d+', str(pozos_str))
-                pozos_afectados.extend([int(n) for n in nums])
+                # Extraer códigos completos de pozos (ej. P-087A, P-113A, o números sueltos)
+                tokens = re.findall(r'([A-Za-z]?\s*-?\s*\d+[A-Za-z]?)', str(pozos_str))
+                for t in tokens:
+                    limpio = t.replace(' ', '').upper()
+                    if limpio:
+                        pozos_asociados.add(limpio)
             
-            pozos_afectados = list(set(pozos_afectados))
-            
-            # Filtrar incidencias activas que coincidan con los pozos de la colonia
-            incidencias_en_zona = df_activas_filtradas[df_activas_filtradas['NUM_POZO'].isin(pozos_afectados)]
+            # Cruzar con las incidencias activas comparando tanto el número exacto como formatos con prefijo P-
+            incidencias_en_zona = pd.DataFrame()
+            if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
+                def coincide_pozo(val):
+                    v_str = str(val).replace(' ', '').upper()
+                    # Revisar coincidencia exacta o si agregando/quitando 'P-' coincide
+                    variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
+                    return bool(variants.intersection(pozos_asociados))
+                
+                mask = df_activas_filtradas['NUM_POZO'].apply(coincide_pozo)
+                incidencias_en_zona = df_activas_filtradas[mask]
             
             if not incidencias_en_zona.empty:
                 st.error(f"⚠️ **La colonia presenta afectación actualmente.** Hay {len(incidencias_en_zona)} incidencia(s) activa(s) en los pozos asociados.")
@@ -300,7 +309,7 @@ if colonia_input:
             else:
                 st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
         except Exception as e:
-            st.info(f"Colonia encontrada en el diccionario, pero ocurrió un error al validar pozos activos: {e}")
+            st.error(f"Error al validar pozos activos para la colonia: {e}")
 
         with st.expander("Ver detalles en el Diccionario de Colonias"):
             st.dataframe(df_col_db[['Col_atl', 'Sector', 'Distrito', 'Pozos', 'Supervisor']])
