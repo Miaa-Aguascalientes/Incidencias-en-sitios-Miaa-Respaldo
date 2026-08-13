@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS generales
+# Estilos CSS generales con selectores reforzados para móviles y WebKit
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -39,6 +39,12 @@ st.markdown("""
     div[data-testid="stExpander"] summary {
         color: #ffffff !important;
         font-weight: 600 !important;
+    }
+    
+    /* Regla global estricta para forzar renderizado en motores móviles (WebKit/Blink) */
+    div[data-testid="stExpander"] {
+        -webkit-appearance: none;
+        box-sizing: border-box;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -166,13 +172,15 @@ def render_card(row, color, unique_key, con_mapa=True):
     """, unsafe_allow_html=True)
     
     with st.expander("🌎 Ver Detalles"):
-        # AQUÍ ESTÁ EL CAMBIO CLAVE: Usamos un selector CSS por atributo específico de Streamlit 
-        # para pintar el contorno y fondo del expander completo, sin contenedores anidados rotos.
+        # Forzamos estilos con prefijos explícitos de WebKit y múltiples selectores para que el motor del cel no los ignore
         st.markdown(f"""
         <style>
             div[data-testid="stExpander"] {{
                 border: 2px solid {color} !important;
                 border-radius: 10px !important;
+                background-color: #0b131f !important;
+            }}
+            div[data-testid="stExpander"] > div {{
                 background-color: #0b131f !important;
             }}
         </style>
