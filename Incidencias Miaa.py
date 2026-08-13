@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS generales
+# Estilos CSS
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -30,28 +30,13 @@ st.markdown("""
     .top-title-text { color: #ffffff; font-size: 13px; font-weight: 600; line-height: 1.2; margin: 0; }
     .section-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
     .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
-    
+    .card { background: #111827; padding: 5px; border-radius: 12px; border-left: 6px solid; margin-bottom: 5px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
-    
-    div[data-testid="stButton"] > button {
-        background-color: #0b0f17 !important;
-        color: #9ca3af !important;
-        border: 1px solid #1f2937 !important;
-        border-radius: 6px !important;
-        font-size: 12px !important;
-        font-weight: 600 !important;
-        transition: all 0.2s ease !important;
-        width: 100% !important;
-    }
-    div[data-testid="stButton"] > button:hover {
-        background-color: #1f2937 !important;
-        color: #ffffff !important;
-        border-color: #374151 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
+# Conexiones con timeout explícito de conexión
 @st.cache_resource
 def get_engine():
     db = st.secrets["mysql_scada"]
@@ -135,7 +120,7 @@ def dibujar_mapa(gdf, color, unique_key):
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
-    st_folium(m, height=260, use_container_width=True, key=unique_key)
+    st_folium(m, height=300, use_container_width=True, key=unique_key)
 
 def format_supervisor(text):
     wa_icon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="vertical-align: middle; margin-right: 4px;"><path d="M12.01 2c-5.51 0-9.99 4.48-9.99 9.99 0 1.76.46 3.48 1.33 5l-1.33 4.88 5-1.31c1.47.8 3.16 1.22 4.87 1.22 5.51 0 9.99-4.48 9.99-9.99S17.52 2 12.01 2zm0 18c-1.46 0-2.88-.41-4.11-1.18l-.29-.18-3.05.8.81-2.97-.18-.3C3.65 14.88 3.23 13.43 3.23 11.99 3.23 7.02 7.04 3.2 12.01 3.2s8.78 3.82 8.78 8.79-3.95 8.79-8.78 8.79zM16.48 15.5c-.27-.13-1.61-.79-1.86-.88s-.43-.13-.61.13c-.18.26-.69.88-.85 1.06-.16.18-.32.2-.59.07s-1.14-.42-2.17-1.34c-.8-.71-1.34-1.59-1.5-1.86s-.01-.43.11-.57c.12-.13.27-.34.4-.51.13-.17.17-.3.26-.51.09-.2.04-.37-.02-.51s-.61-1.48-.84-2.03c-.22-.53-.45-.46-.61-.46-.16 0-.34-.01-.51-.01s-.44.06-.67.31c-.23.25-.88.86-.88 2.09s.6 2.42.69 2.55c.09.13 1.73 2.64 4.19 3.7c.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.51-.62 1.72-1.21.21-.59.21-1.1.15-1.21-.06-.11-.23-.17-.5-.3z"/></svg>'
@@ -147,8 +132,8 @@ def format_supervisor(text):
         tel_full = f"52{num}"
         return text.replace(match.group(0), f"<strong>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 8px; display: flex; gap: 10px;'>
-                <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 30px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
-                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 6px 22px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
+                <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 40px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
+                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 6px 28px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
             </div>"""
     return text
 
@@ -156,98 +141,81 @@ def render_card(row, color, unique_key, con_mapa=True):
     inicio = pd.to_datetime(row['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
-
-    state_key = f"open_{unique_key}"
-    if state_key not in st.session_state:
-        st.session_state[state_key] = False
-
-    is_open = st.session_state[state_key]
-    btn_label = "▲ Ocultar Detalles" if is_open else "▼ Ver Detalles"
-
-    # En vez de abrir/cerrar HTML suelto, usamos un contenedor de Streamlit y aplicamos el borde al contenedor completo
-    with st.container():
-        st.markdown(f"""
-            <div style='background: #111827; border: 2px solid {color}; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); margin-top: 15px;'>
-                <div style='border-left: 6px solid {color}; padding-left: 8px; margin-bottom: 8px;'>
-                    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-                        <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
-                        <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
-                    </div>
-                    <div class='label'>Diagnóstico</div>
-                    <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-                    <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
-                        <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
-                        <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-                        <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
-                    </div>
-                </div>
-        """, unsafe_allow_html=True)
-
-        if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
-            st.session_state[state_key] = not st.session_state[state_key]
-            st.rerun()
-
-        if is_open:
-            st.markdown("<hr style='border-color: #1f2937; margin: 10px 0;'>", unsafe_allow_html=True)
-            if con_mapa:
-                gdf = get_geometries(row.get('NUM_POZO'))
-                if gdf is not None and not gdf.empty:
-                    st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-                    dibujar_mapa(gdf, color, unique_key)
-                    sectores = ', '.join(gdf['Sector'].dropna().unique())
-                    distritos = ', '.join(gdf['Distrito'].dropna().unique())
-                    raw_supervisores = gdf['Supervisor'].dropna().unique()
-                    supervisores_list = []
-                    for item in raw_supervisores:
-                        items = [s.strip() for s in item.split(',') if s.strip()]
-                        supervisores_list.extend([format_supervisor(s) for s in items])
-                    supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
-                    st.markdown(f"""
-                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 0px; margin-top: 15px;'>
-                                <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                                <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
-                            </div>   
+    
+    st.markdown(f"""
+    <div class='card' style='border-left-color: {color};'>
+        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+            <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
+            <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
+        </div>
+        <div class='label'>Diagnóstico</div>
+        <div class='value' style='margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+        <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
+            <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
+            <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
+            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')}</div></div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    with st.expander("🌎 Ver Detalles"):
+        if con_mapa:
+            gdf = get_geometries(row.get('NUM_POZO'))
+            if gdf is not None and not gdf.empty:
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                dibujar_mapa(gdf, color, unique_key)
+                sectores = ', '.join(gdf['Sector'].dropna().unique())
+                distritos = ', '.join(gdf['Distrito'].dropna().unique())
+                raw_supervisores = gdf['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
-                    """, unsafe_allow_html=True)
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            df_info = get_colonias_info(row.get('NUM_POZO'))
+            if df_info is not None and not df_info.empty:
+                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                sectores = ', '.join(df_info['Sector'].dropna().unique())
+                distritos = ', '.join(df_info['Distrito'].dropna().unique())
+                raw_supervisores = df_info['Supervisor'].dropna().unique()
+                supervisores_list = []
+                for item in raw_supervisores:
+                    items = [s.strip() for s in item.split(',') if s.strip()]
+                    supervisores_list.extend([format_supervisor(s) for s in items])
+                supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
+                
+                st.markdown(f"""
+                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                            <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
+                        </div>
+                        <div style='padding: 0px; margin-top: 15px;'>
+                            <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
+                            <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
+                        </div>   
+                    </div>
+                """, unsafe_allow_html=True)
             else:
-                df_info = get_colonias_info(row.get('NUM_POZO'))
-                if df_info is not None and not df_info.empty:
-                    colonias = ', '.join(df_info['Col_atl'].dropna().unique())
-                    sectores = ', '.join(df_info['Sector'].dropna().unique())
-                    distritos = ', '.join(df_info['Distrito'].dropna().unique())
-                    raw_supervisores = df_info['Supervisor'].dropna().unique()
-                    supervisores_list = []
-                    for item in raw_supervisores:
-                        items = [s.strip() for s in item.split(',') if s.strip()]
-                        supervisores_list.extend([format_supervisor(s) for s in items])
-                    supervisores_html = "".join([f"<div style='margin-bottom: 15px; border-bottom: 1px solid #1f2937; padding-bottom: 10px;'>• {s}</div>" for s in supervisores_list])
-                    
-                    st.markdown(f"""
-                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                            <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                                <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
-                            </div>
-                            <div style='padding: 0px; margin-top: 15px;'>
-                                <div class='label' style='margin-bottom: 10px;'>Supervisores (Contacto móvil)</div>
-                                <div style='margin-top: 0px;'>{supervisores_html if supervisores_list else 'N/A'}</div>
-                            </div>   
-                        </div>
-                    """, unsafe_allow_html=True)
-                else:
-                    st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
@@ -315,8 +283,7 @@ try:
         mapa_opciones = {f"{MESES_ES[o.split('-')[1]]} {o.split('-')[0]}": o for o in opciones_raw}
         seleccion = st.selectbox("Seleccionar mes:", options=list(mapa_opciones.keys()))
         
-        target_col = 'FECHA_HORX_FIN' if 'FECHA_HORX_FIN' in historico.columns else 'FECHA_HORA_FIN'
-        for idx, row in historico[historico[target_col].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
+        for idx, row in historico[historico['FECHA_HORA_FIN'].dt.strftime('%Y-%m') == mapa_opciones[seleccion]].iterrows():
             render_card(row, "#6c757d", unique_key=f"card_hist_{idx}", con_mapa=False)
             
 except Exception as e:
