@@ -34,7 +34,6 @@ st.markdown("""
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
     
-    /* Recuadro de color blanco más delgado envolviendo al botón de los detalles */
     div[data-testid="stExpander"] {
         border: 1px solid #ffffff !important;
         border-radius: 8px !important;
@@ -42,7 +41,6 @@ st.markdown("""
         overflow: hidden;
     }
 
-    /* Forzar texto en el Expander (Ver Detalles), Colonias y Supervisores */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span, 
     div[data-testid="stExpander"] summary {
@@ -50,7 +48,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Forzar color azul brillante en el texto y elementos del toggle */
     div[data-testid="stToggle"] label p,
     div[data-testid="stToggle"] label span,
     .stToggle p,
@@ -59,7 +56,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* Forzar el color azul brillante en el fondo del interruptor cuando está activado */
     div[data-testid="stToggle"] div[data-baseweb="checkbox"] input:checked + div {
         background-color: #00bfff !important;
     }
@@ -69,7 +65,6 @@ st.markdown("""
         background-color: #00bfff !important;
     }
 
-    /* Forzar texto blanco súper brillante en títulos Markdown e inputs de texto/labels en dispositivos móviles y web */
     h3, .stMarkdown h3, div[data-testid="stMarkdownContainer"] h3 {
         color: #ffffff !important;
         font-weight: 700 !important;
@@ -160,6 +155,13 @@ def buscar_afectacion_diccionario(nombre_colonia):
     except Exception:
         return None
 
+# Función auxiliar para formatear duración personalizada
+def format_duracion(delta):
+    dias = delta.days
+    horas, resto = divmod(delta.seconds, 3600)
+    minutos, segundos = divmod(resto, 60)
+    return f"{dias} Días con {horas:02}:{minutos:02}:{segundos:02}"
+
 @st.fragment
 def dibujar_mapa(gdf, color, unique_key):
     m = folium.Map(
@@ -217,7 +219,7 @@ def render_card(row, color, unique_key, con_mapa=True):
         <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;'>
             <div><div class='label'>Inicio</div><div class='value'>{inicio.strftime('%d/%m %H:%M')}</div></div>
             <div><div class='label'>Cierre</div><div class='value'>{'N/A' if pd.isnull(fin_raw) else pd.to_datetime(fin_raw).strftime('%d/%m %H:%M')}</div></div>
-            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{str(duracion).split('.')[0].replace('days', 'Días').replace('day', 'Día')} horas</div></div>
+            <div><div class='label'>Duración</div><div class='value' style='color: {color};'>{format_duracion(duracion)} horas</div></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -298,7 +300,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Colonias controlado por un st.toggle con color azul brillante (#00bfff)
 activar_busqueda = st.toggle("Buscador de colonias", value=False)
 
 if activar_busqueda:
@@ -343,19 +344,16 @@ if activar_busqueda:
                     variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
                     return bool(variants.intersection(pozos_asociados))
 
-                # 1. Buscar en incidencias activas
                 incidencias_en_zona = pd.DataFrame()
                 if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
                     mask = df_activas_filtradas['NUM_POZO'].apply(coincide_pozo)
                     incidencias_en_zona = df_activas_filtradas[mask]
                 
-                # 2. Buscar en incidencias cerradas de hoy o ayer
                 cerradas_en_zona = pd.DataFrame()
                 if not df_cerradas_recientes.empty and 'NUM_POZO' in df_cerradas_recientes.columns:
                     mask_cerradas = df_cerradas_recientes['NUM_POZO'].apply(coincide_pozo)
                     cerradas_en_zona = df_cerradas_recientes[mask_cerradas]
 
-                # Renderizar resultados activos
                 if not incidencias_en_zona.empty:
                     for _, inc in incidencias_en_zona.iterrows():
                         st.markdown(f"""
@@ -366,18 +364,16 @@ if activar_busqueda:
                             </div>
                         """, unsafe_allow_html=True)
                 
-                # Renderizar resultados cerrados hoy o ayer con duración calculada y la palabra horas añadida
                 if not cerradas_en_zona.empty:
                     for _, inc in cerradas_en_zona.iterrows():
                         inicio_dt = pd.to_datetime(inc['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
                         fin_dt = pd.to_datetime(inc['FECHA_HORA_FIN']).tz_localize(None).tz_localize('America/Mexico_City')
-                        duracion_str = str(fin_dt - inicio_dt).split('.')[0].replace('days', 'Días').replace('day', 'Día')
                         fecha_cierre_str = fin_dt.strftime('%d/%m/%Y a las %H:%M')
                         
                         st.markdown(f"""
                             <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 8px;'>
                                 <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')}</div>
-                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{duracion_str} horas</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
+                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{format_duracion(fin_dt - inicio_dt)} horas</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
                                 <div style='color: #9ca3af; font-size: 12px; margin-top: 2px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
                             </div>
                         """, unsafe_allow_html=True)
