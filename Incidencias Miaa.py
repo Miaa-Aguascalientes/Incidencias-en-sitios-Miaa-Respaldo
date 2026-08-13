@@ -268,8 +268,18 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación controlado por un st.toggle
-activar_busqueda = st.toggle("Activar", value=False)
+# Módulo de Búsqueda de Colonias controlado por un st.toggle con etiqueta de texto en blanco brillante
+activar_busqueda = st.toggle("Buscador de colonias", value=False)
+
+# Forzar color blanco brillante mediante estilos en el contenedor del toggle si fuera necesario
+st.markdown("""
+<style>
+div[data-testid="stToggle"] p {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 if activar_busqueda:
     st.markdown("### 🔍 Consultar Afectación por Colonia")
