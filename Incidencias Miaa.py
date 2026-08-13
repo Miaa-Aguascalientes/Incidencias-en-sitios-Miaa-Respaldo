@@ -317,6 +317,7 @@ if activar_busqueda:
         else:
             try:
                 df_incidencias = get_data()
+                df_incidencias['FECHA_HORA_INICIO'] = pd.to_datetime(df_incidencias['FECHA_HORA_INICIO'])
                 df_incidencias['FECHA_HORA_FIN'] = pd.to_datetime(df_incidencias['FECHA_HORA_FIN'])
                 
                 hoy = get_now_mexico().date()
@@ -365,14 +366,18 @@ if activar_busqueda:
                             </div>
                         """, unsafe_allow_html=True)
                 
-                # Renderizar resultados cerrados hoy o ayer con mensaje personalizado
+                # Renderizar resultados cerrados hoy o ayer con duración calculada
                 if not cerradas_en_zona.empty:
                     for _, inc in cerradas_en_zona.iterrows():
-                        fecha_cierre_str = pd.to_datetime(inc.get('FECHA_HORA_FIN')).strftime('%d/%m/%Y a las %H:%M')
+                        inicio_dt = pd.to_datetime(inc['FECHA_HORA_INICIO']).tz_localize(None).tz_localize('America/Mexico_City')
+                        fin_dt = pd.to_datetime(inc['FECHA_HORA_FIN']).tz_localize(None).tz_localize('America/Mexico_City')
+                        duracion_str = str(fin_dt - inicio_dt).split('.')[0].replace('days', 'Días').replace('day', 'Día')
+                        fecha_cierre_str = fin_dt.strftime('%d/%m/%Y a las %H:%M')
+                        
                         st.markdown(f"""
                             <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 8px;'>
                                 <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')}</div>
-                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
+                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada con una duración de <strong>{duracion_str}</strong>, pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
                                 <div style='color: #9ca3af; font-size: 12px; margin-top: 2px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
                             </div>
                         """, unsafe_allow_html=True)
