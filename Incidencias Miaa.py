@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS
+# Estilos CSS generales
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -34,7 +34,7 @@ st.markdown("""
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
     
-    /* Forzar texto blanco brillante en el Expander (Ver Detalles) */
+    /* Forzar texto blanco brillante en la cabecera del Expander (Ver Detalles) */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span, 
     div[data-testid="stExpander"] summary {
@@ -166,12 +166,18 @@ def render_card(row, color, unique_key, con_mapa=True):
     </div>
     """, unsafe_allow_html=True)
     
+    # Inyectamos CSS específico para cambiar el borde y fondo del contenedor externo del expander actual
+    st.markdown(f"""
+        <style>
+        div[data-testid="stExpander"] {{
+            border: 1px solid {color} !important;
+            border-radius: 8px !important;
+            background-color: {color}0d !important;
+        }}
+        </style>
+    """, unsafe_allow_html=True)
+
     with st.expander("🌎 Ver Detalles"):
-        # Contenedor externo completo con el color de estado de la incidencia
-        external_box_style = f"padding: 10px; background: {color}0d; border-radius: 8px; border: 1px solid {color}; margin-top: 5px;"
-        
-        st.markdown(f"<div style='{external_box_style}'>", unsafe_allow_html=True)
-        
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
@@ -229,8 +235,6 @@ def render_card(row, color, unique_key, con_mapa=True):
                 """, unsafe_allow_html=True)
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
