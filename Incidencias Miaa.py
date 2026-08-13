@@ -34,6 +34,14 @@ st.markdown("""
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
     
+    /* Recuadro de color blanco que envuelve al botón de los detalles */
+    div[data-testid="stExpander"] {
+        border: 2px solid #ffffff !important;
+        border-radius: 8px !important;
+        background-color: #111827 !important;
+        overflow: hidden;
+    }
+
     /* Forzar texto blanco brillante en el Expander (Ver Detalles), Colonias y Supervisores */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span, 
