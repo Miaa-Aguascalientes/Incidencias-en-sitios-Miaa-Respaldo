@@ -50,15 +50,23 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Forzar color azul brillante (#00bfff o #1e90ff) de manera absoluta en Streamlit v1.42+ usando selectores específicos del widget toggle */
+    /* Forzar color azul brillante en el texto y elementos del toggle */
     div[data-testid="stToggle"] label p,
     div[data-testid="stToggle"] label span,
-    div[data-testid="stToggle"] div,
     .stToggle p,
     .stToggle span {
         color: #00bfff !important;
-        fill: #00bfff !important;
         font-weight: 700 !important;
+    }
+
+    /* Forzar el color azul brillante en el fondo del interruptor cuando está activado */
+    div[data-testid="stToggle"] div[data-baseweb="checkbox"] input:checked + div {
+        background-color: #00bfff !important;
+    }
+    
+    div[data-testid="stToggle"] span[data-baseweb="tag"],
+    div[data-testid="stToggle"] div[class*="st-ae"] {
+        background-color: #00bfff !important;
     }
     </style>
 """, unsafe_allow_html=True)
