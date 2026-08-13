@@ -19,7 +19,7 @@ def get_now_mexico(): return datetime.now(mexico_tz)
 
 st.set_page_config(page_title="Incidencias MIAA", layout="wide", initial_sidebar_state="collapsed")
 
-# Estilos CSS unificados
+# Estilos CSS unificados para la tarjeta completa
 st.markdown("""
     <style>
     .stApp { background-color: #050a10 !important; }
@@ -33,26 +33,9 @@ st.markdown("""
     
     .card-container { background: #111827; border-radius: 12px; border-left: 6px solid; margin-bottom: 15px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); overflow: hidden; }
     .card-body { padding: 12px; }
+    .card-details { background-color: #0b0f17; border-top: 1px solid #1f2937; padding: 12px; }
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
-    
-    /* Integración perfecta del expander dentro de la tarjeta */
-    [data-testid="stExpander"] {
-        background-color: #0b0f17 !important;
-        border: none !important;
-        border-top: 1px solid #1f2937 !important;
-        border-radius: 0px !important;
-        margin: 0 !important;
-    }
-    [data-testid="stExpander"] summary {
-        font-size: 12px;
-        color: #9ca3af;
-        font-weight: 600;
-        background-color: #111827;
-    }
-    [data-testid="stExpander"] details {
-        border: none !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -162,7 +145,7 @@ def render_card(row, color, unique_key, con_mapa=True):
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
     
-    # Contenedor envolvente visual de la tarjeta
+    # Abrir contenedor principal de la tarjeta
     st.markdown(f"""
     <div class='card-container' style='border-left-color: {color};'>
         <div class='card-body'>
@@ -180,8 +163,19 @@ def render_card(row, color, unique_key, con_mapa=True):
         </div>
     """, unsafe_allow_html=True)
     
-    # Expansor integrado al fondo de la misma tarjeta
-    with st.expander("🌎 Ver Detalles y Mapa"):
+    # Control de estado para el botón desplegable interno
+    state_key = f"open_{unique_key}"
+    if state_key not in st.session_state:
+        st.session_state[state_key] = False
+
+    btn_label = "▲ Ocultar Detalles y Mapa" if st.session_state[state_key] else "▼ 🌎 Ver Detalles y Mapa"
+    if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
+        st.session_state[state_key] = not st.session_state[state_key]
+        st.rerun()
+
+    # Si está abierto, renderizamos el contenido dentro del mismo bloque visual de la tarjeta
+    if st.session_state[state_key]:
+        st.markdown("<div class='card-details'>", unsafe_allow_html=True)
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
@@ -239,8 +233,9 @@ def render_card(row, color, unique_key, con_mapa=True):
                 """, unsafe_allow_html=True)
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Cierre del contenedor principal de la tarjeta
+    # Cierre total del contenedor principal de la tarjeta
     st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
