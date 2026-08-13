@@ -41,7 +41,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Regla global estricta para forzar renderizado en motores móviles (WebKit/Blink) */
     div[data-testid="stExpander"] {
         -webkit-appearance: none;
         box-sizing: border-box;
@@ -172,7 +171,6 @@ def render_card(row, color, unique_key, con_mapa=True):
     """, unsafe_allow_html=True)
     
     with st.expander("🌎 Ver Detalles"):
-        # Forzamos estilos con prefijos explícitos de WebKit y múltiples selectores para que el motor del cel no los ignore
         st.markdown(f"""
         <style>
             div[data-testid="stExpander"] {{
