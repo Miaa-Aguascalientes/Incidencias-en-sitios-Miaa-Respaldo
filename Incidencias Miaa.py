@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import geopandas as gpd
 from sqlalchemy import create_engine
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 from streamlit_folium import st_folium
 import folium
@@ -316,8 +316,18 @@ if activar_busqueda:
             st.warning(f"No se encontró información registrada para la colonia: '{colonia_input}' en el diccionario.")
         else:
             try:
-                df_incidencias_activas = get_data()
-                df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
+                df_incidencias = get_data()
+                df_incidencias['FECHA_HORA_FIN'] = pd.to_datetime(df_incidencias['FECHA_HORA_FIN'])
+                
+                hoy = get_now_mexico().date()
+                ayer = hoy - timedelta(days=1)
+                
+                df_activas_filtradas = df_incidencias[~df_incidencias['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
+                df_cerradas_recientes = df_incidencias[
+                    df_incidencias['ESTATUS'].str.contains('CERRADA', case=False, na=False) & 
+                    df_incidencias['FECHA_HORA_FIN'].notnull() & 
+                    df_incidencias['FECHA_HORA_FIN'].dt.date.isin([hoy, ayer])
+                ]
                 
                 pozos_asociados = set()
                 for pozos_str in df_col_db['Pozos'].dropna():
@@ -327,16 +337,24 @@ if activar_busqueda:
                         if limpio:
                             pozos_asociados.add(limpio)
                 
+                def coincide_pozo(val):
+                    v_str = str(val).replace(' ', '').upper()
+                    variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
+                    return bool(variants.intersection(pozos_asociados))
+
+                # 1. Buscar en incidencias activas
                 incidencias_en_zona = pd.DataFrame()
                 if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
-                    def coincide_pozo(val):
-                        v_str = str(val).replace(' ', '').upper()
-                        variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
-                        return bool(variants.intersection(pozos_asociados))
-                    
                     mask = df_activas_filtradas['NUM_POZO'].apply(coincide_pozo)
                     incidencias_en_zona = df_activas_filtradas[mask]
                 
+                # 2. Buscar en incidencias cerradas de hoy o ayer
+                cerradas_en_zona = pd.DataFrame()
+                if not df_cerradas_recientes.empty and 'NUM_POZO' in df_cerradas_recientes.columns:
+                    mask_cerradas = df_cerradas_recientes['NUM_POZO'].apply(coincide_pozo)
+                    cerradas_en_zona = df_cerradas_recientes[mask_cerradas]
+
+                # Renderizar resultados activos
                 if not incidencias_en_zona.empty:
                     for _, inc in incidencias_en_zona.iterrows():
                         st.markdown(f"""
@@ -346,10 +364,23 @@ if activar_busqueda:
                                 <div style='color: #9ca3af; font-size: 12px;'>Inicio: {inc.get('FECHA_HORA_INICIO')}</div>
                             </div>
                         """, unsafe_allow_html=True)
-                else:
-                    st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
+                
+                # Renderizar resultados cerrados hoy o ayer con mensaje personalizado
+                if not cerradas_en_zona.empty:
+                    for _, inc in cerradas_en_zona.iterrows():
+                        fecha_cierre_str = pd.to_datetime(inc.get('FECHA_HORA_FIN')).strftime('%d/%m/%Y a las %H:%M')
+                        st.markdown(f"""
+                            <div style='background: #1f2937; padding: 10px; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 8px;'>
+                                <div style='color: white; font-weight: bold;'>Pozo {inc.get('NUM_POZO')}</div>
+                                <div style='color: #f3f4f6; font-size: 13px; margin-top: 4px;'>Tuvo una incidencia registrada pero ya está cerrada con fecha del <strong>{fecha_cierre_str}</strong>.</div>
+                                <div style='color: #9ca3af; font-size: 12px; margin-top: 2px;'>Diagnóstico: {inc.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                if incidencias_en_zona.empty and cerradas_en_zona.empty:
+                    st.info(f"✅ **Sin afectación actual ni reciente.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas o cerradas recientemente (hoy o ayer).")
             except Exception as e:
-                st.error(f"Error al validar pozos activos para la colonia: {e}")
+                st.error(f"Error al validar pozos para la colonia: {e}")
 
 st.markdown("---")
 
