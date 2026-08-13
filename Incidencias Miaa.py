@@ -50,9 +50,14 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* Forzar color azul escarlata (#1E90FF) en la etiqueta del toggle de colonias */
-    div[data-testid="stToggle"] p, div[data-testid="stToggle"] span {
-        color: #1E90FF !important;
+    /* Forzar color azul brillante (#00bfff o #1e90ff) de manera absoluta en Streamlit v1.42+ usando selectores específicos del widget toggle */
+    div[data-testid="stToggle"] label p,
+    div[data-testid="stToggle"] label span,
+    div[data-testid="stToggle"] div,
+    .stToggle p,
+    .stToggle span {
+        color: #00bfff !important;
+        fill: #00bfff !important;
         font-weight: 700 !important;
     }
     </style>
@@ -274,7 +279,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Colonias controlado por un st.toggle con color azul escarlata (#1E90FF)
+# Módulo de Búsqueda de Colonias controlado por un st.toggle con color azul brillante (#00bfff)
 activar_busqueda = st.toggle("Buscador de colonias", value=False)
 
 if activar_busqueda:
