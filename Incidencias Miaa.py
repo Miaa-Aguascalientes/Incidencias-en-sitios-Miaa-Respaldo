@@ -34,7 +34,6 @@ st.markdown("""
     .label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
     .value { font-size: 14px; color: #f3f4f6; font-weight: 500; }
     
-    /* Estilo para los botones internos de Streamlit */
     div[data-testid="stButton"] > button {
         background-color: #0b0f17 !important;
         color: #9ca3af !important;
@@ -43,6 +42,7 @@ st.markdown("""
         font-size: 12px !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
+        width: 100% !important;
     }
     div[data-testid="stButton"] > button:hover {
         background-color: #1f2937 !important;
@@ -148,7 +148,7 @@ def format_supervisor(text):
         return text.replace(match.group(0), f"<strong>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 8px; display: flex; gap: 10px;'>
                 <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 6px 30px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
-                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 6px 22px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{tel_icon} WhatsApp</a>
+                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 6px 22px; border-radius: 5px; font-size: 12px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
             </div>"""
     return text
 
@@ -164,7 +164,7 @@ def render_card(row, color, unique_key, con_mapa=True):
     is_open = st.session_state[state_key]
     btn_label = "▲ Ocultar Detalles" if is_open else "▼ Ver Detalles"
 
-    # Contenedor visual único que envuelve absolutamente todo de principio a fin
+    # Marco unificado envolvente principal
     st.markdown(f"""
         <div style='background: #111827; border: 2px solid {color}; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); margin-top: 15px;'>
             <div style='border-left: 6px solid {color}; padding-left: 8px; margin-bottom: 8px;'>
@@ -182,7 +182,6 @@ def render_card(row, color, unique_key, con_mapa=True):
             </div>
     """, unsafe_allow_html=True)
 
-    # El botón de Streamlit ahora queda renderizado justo dentro del flujo del mismo bloque
     if st.button(btn_label, key=f"btn_{unique_key}", use_container_width=True):
         st.session_state[state_key] = not st.session_state[state_key]
         st.rerun()
@@ -247,7 +246,7 @@ def render_card(row, color, unique_key, con_mapa=True):
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
-    # Cierre definitivo del marco principal
+    # Cierre único del marco principal que envuelve todo
     st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
