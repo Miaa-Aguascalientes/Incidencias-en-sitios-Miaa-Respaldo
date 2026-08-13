@@ -166,18 +166,12 @@ def render_card(row, color, unique_key, con_mapa=True):
     </div>
     """, unsafe_allow_html=True)
     
-    # Inyectamos CSS específico para cambiar el borde y fondo del contenedor externo del expander actual
-    st.markdown(f"""
-        <style>
-        div[data-testid="stExpander"] {{
-            border: 1px solid {color} !important;
-            border-radius: 8px !important;
-            background-color: {color}0d !important;
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-
     with st.expander("🌎 Ver Detalles"):
+        # Contenedor con fondo sólido y borde grueso perfectamente visible en celulares y PC
+        st.markdown(f"""
+        <div style="background-color: #0b131f; border: 2px solid {color}; border-radius: 10px; padding: 12px; margin-top: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+        """, unsafe_allow_html=True)
+        
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
@@ -235,6 +229,8 @@ def render_card(row, color, unique_key, con_mapa=True):
                 """, unsafe_allow_html=True)
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
+        
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
