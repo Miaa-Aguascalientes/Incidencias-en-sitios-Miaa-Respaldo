@@ -268,11 +268,10 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación con st.selectbox precargado (búsqueda predictiva integrada)
+# Módulo de Búsqueda de Afectación con st.selectbox precargado (sin banner verde ni expander de diccionario)
 st.markdown("### 🔍 Consultar Afectación por Colonia")
 
 lista_colonias = get_todas_colonias()
-# Usamos un selectbox con opción vacía inicial para permitir búsqueda interactiva con autocompletado
 colonia_input = st.selectbox(
     "Selecciona o escribe el nombre de la colonia:",
     options=[""] + lista_colonias,
@@ -284,8 +283,6 @@ if colonia_input:
     if df_col_db is None or df_col_db.empty:
         st.warning(f"No se encontró información registrada para la colonia: '{colonia_input}' en el diccionario.")
     else:
-        st.success(f"Se encontraron registros de afectación para **{colonia_input.upper()}**:")
-        
         try:
             df_incidencias_activas = get_data()
             df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
@@ -322,9 +319,6 @@ if colonia_input:
                 st.info(f"✅ **Sin afectación en este momento.** La colonia está registrada, pero ninguno de sus pozos asociados tiene incidencias activas.")
         except Exception as e:
             st.error(f"Error al validar pozos activos para la colonia: {e}")
-
-        with st.expander("Ver detalles en el Diccionario de Colonias"):
-            st.dataframe(df_col_db[['Col_atl', 'Sector', 'Distrito', 'Pozos', 'Supervisor']])
 
 st.markdown("---")
 
