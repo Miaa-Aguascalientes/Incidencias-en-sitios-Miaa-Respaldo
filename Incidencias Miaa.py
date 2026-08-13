@@ -42,12 +42,18 @@ st.markdown("""
         overflow: hidden;
     }
 
-    /* Forzar texto blanco brillante en el Expander (Ver Detalles), Colonias y Supervisores */
+    /* Forzar texto en el Expander (Ver Detalles), Colonias y Supervisores */
     div[data-testid="stExpander"] summary p, 
     div[data-testid="stExpander"] summary span, 
     div[data-testid="stExpander"] summary {
         color: #ffffff !important;
         font-weight: 600 !important;
+    }
+
+    /* Forzar color azul escarlata (#1E90FF) en la etiqueta del toggle de colonias */
+    div[data-testid="stToggle"] p, div[data-testid="stToggle"] span {
+        color: #1E90FF !important;
+        font-weight: 700 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -268,18 +274,8 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Colonias controlado por un st.toggle con etiqueta de texto en blanco brillante
+# Módulo de Búsqueda de Colonias controlado por un st.toggle con color azul escarlata (#1E90FF)
 activar_busqueda = st.toggle("Buscador de colonias", value=False)
-
-# Forzar color blanco brillante mediante estilos en el contenedor del toggle si fuera necesario
-st.markdown("""
-<style>
-div[data-testid="stToggle"] p {
-    color: #ffffff !important;
-    font-weight: 600 !important;
-}
-</style>
-""", unsafe_allow_html=True)
 
 if activar_busqueda:
     st.markdown("### 🔍 Consultar Afectación por Colonia")
