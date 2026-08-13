@@ -133,9 +133,9 @@ def dibujar_mapa(gdf, color, unique_key):
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
     
-    # Contenedor con borde y fondo para envolver el mapa de las colonias afectadas
+    # Contenedor idéntico al estilo de Sector/Distrito (background #111827 con padding de 8px)
     st.markdown(f"""
-    <div style="border: 2px solid {color}; border-radius: 10px; background-color: #050a10; padding: 4px; margin-bottom: 10px;">
+    <div style="background-color: #111827; padding: 8px; border-radius: 5px; border: 1px solid #374151; margin-bottom: 8px;">
     """, unsafe_allow_html=True)
     st_folium(m, height=300, use_container_width=True, key=unique_key)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -197,7 +197,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 st.markdown(f"""
                     <div style='margin-bottom: 8px; font-size: 12px; color: #9ca3af;'>
                         <strong>Colonias:</strong> 
-                        <div style='max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; background: #050a10; padding: 4px; border-radius: 4px; border: 1px solid #374151; margin-top: 4px;'>
+                        <div style='background-color: #111827; padding: 8px; border-radius: 5px; border: 1px solid #374151; max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; margin-top: 4px;'>
                             {colonias_str}
                         </div>
                     </div>
@@ -216,10 +216,10 @@ def render_card(row, color, unique_key, con_mapa=True):
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                        <div style='padding: 8px; background: #111827; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                        <div style='padding: 8px; background: #111827; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
                         </div>
                         <div style='padding: 0px; margin-top: 15px;'>
@@ -245,14 +245,14 @@ def render_card(row, color, unique_key, con_mapa=True):
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
                         <div style='font-size: 12px; color: #9ca3af;'>
                             <strong>Colonias:</strong> 
-                            <div style='max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; background: #050a10; padding: 4px; border-radius: 4px; border: 1px solid #374151; margin-top: 4px;'>
+                            <div style='background-color: #111827; padding: 8px; border-radius: 5px; border: 1px solid #374151; max-height: 60px; overflow-y: auto; color: #ffffff; font-weight: 500; margin-top: 4px;'>
                                 {colonias if colonias else 'N/A'}
                             </div>
                         </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                        <div style='padding: 8px; background: #111827; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                        <div style='padding: 8px; background: #111827; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Distrito</div><div class='value'>{distritos if distritos else 'N/A'}</div>
                         </div>
                         <div style='padding: 0px; margin-top: 15px;'>
