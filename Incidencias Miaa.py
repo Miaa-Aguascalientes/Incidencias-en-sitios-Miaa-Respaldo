@@ -306,7 +306,7 @@ st.markdown("""
 activar_busqueda = st.toggle("Buscador de colonias", value=False)
 
 if activar_busqueda:
-    st.markdown("### 🔍 Consultar Afectación por Colonia")
+    st.markdown("### 🔍 Consultar Colonia")
     lista_colonias = get_todas_colonias()
     colonia_input = st.selectbox(
         "Selecciona o escribe el nombre de la colonia:",
