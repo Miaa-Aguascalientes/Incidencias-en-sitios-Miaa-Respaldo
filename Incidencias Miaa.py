@@ -164,9 +164,9 @@ def render_card(row, color, unique_key, con_mapa=True):
     is_open = st.session_state[state_key]
     btn_label = "▲ Ocultar Detalles" if is_open else "▼ Ver Detalles"
 
-    # Contenedor HTML principal que envuelve absolutamente todo con el color del estado en el borde exterior
+    # Abrimos el contenedor general que envuelve TODO (tarjeta + botón + detalles expandidos)
     st.markdown(f"""
-        <div style='background: #111827; border: 1px solid {color}; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); margin-top: 15px;'>
+        <div style='background: #111827; border: 2px solid {color}; border-radius: 12px; padding: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); margin-top: 15px;'>
             <div style='border-left: 6px solid {color}; padding-left: 8px; margin-bottom: 8px;'>
                 <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
                     <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
@@ -246,7 +246,7 @@ def render_card(row, color, unique_key, con_mapa=True):
             else:
                 st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
-    # Cierre del div principal de la tarjeta
+    # Cerramos el contenedor general al final de todo
     st.markdown("</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
