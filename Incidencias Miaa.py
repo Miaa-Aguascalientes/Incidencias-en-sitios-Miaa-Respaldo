@@ -113,6 +113,15 @@ def get_colonias_info(num_pozo):
         return None
 
 @st.cache_data(ttl=60)
+def get_todas_colonias():
+    query = "SELECT DISTINCT Col_atl FROM Diccionario_colonias WHERE Col_atl IS NOT NULL ORDER BY Col_atl ASC"
+    try:
+        df = pd.read_sql(query, get_engine_telemetria())
+        return df['Col_atl'].tolist() if not df.empty else []
+    except Exception:
+        return []
+
+@st.cache_data(ttl=60)
 def buscar_afectacion_diccionario(nombre_colonia):
     query = f"SELECT Col_atl, Sector, Distrito, Pozos, Supervisor FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
     try:
@@ -259,9 +268,16 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Módulo de Búsqueda de Afectación directo de la Base de Datos (Diccionario_colonias) con cruce robusto de pozos
+# Módulo de Búsqueda de Afectación con st.selectbox precargado (búsqueda predictiva integrada)
 st.markdown("### 🔍 Consultar Afectación por Colonia")
-colonia_input = st.text_input("Ingresa el nombre de la colonia a buscar:", placeholder="Ej. TROJES DEL COBANO")
+
+lista_colonias = get_todas_colonias()
+# Usamos un selectbox con opción vacía inicial para permitir búsqueda interactiva con autocompletado
+colonia_input = st.selectbox(
+    "Selecciona o escribe el nombre de la colonia:",
+    options=[""] + lista_colonias,
+    format_func=lambda x: "Selecciona una colonia..." if x == "" else x
+)
 
 if colonia_input:
     df_col_db = buscar_afectacion_diccionario(colonia_input)
@@ -274,22 +290,18 @@ if colonia_input:
             df_incidencias_activas = get_data()
             df_activas_filtradas = df_incidencias_activas[~df_incidencias_activas['ESTATUS'].str.contains('CERRADA', case=False, na=False)]
             
-            # Extraer todos los pozos listados en la columna 'Pozos' del diccionario para esta colonia
             pozos_asociados = set()
             for pozos_str in df_col_db['Pozos'].dropna():
-                # Extraer códigos completos de pozos (ej. P-087A, P-113A, o números sueltos)
                 tokens = re.findall(r'([A-Za-z]?\s*-?\s*\d+[A-Za-z]?)', str(pozos_str))
                 for t in tokens:
                     limpio = t.replace(' ', '').upper()
                     if limpio:
                         pozos_asociados.add(limpio)
             
-            # Cruzar con las incidencias activas comparando tanto el número exacto como formatos con prefijo P-
             incidencias_en_zona = pd.DataFrame()
             if not df_activas_filtradas.empty and 'NUM_POZO' in df_activas_filtradas.columns:
                 def coincide_pozo(val):
                     v_str = str(val).replace(' ', '').upper()
-                    # Revisar coincidencia exacta o si agregando/quitando 'P-' coincide
                     variants = {v_str, f"P-{v_str}", v_str.replace('P-', '')}
                     return bool(variants.intersection(pozos_asociados))
                 
