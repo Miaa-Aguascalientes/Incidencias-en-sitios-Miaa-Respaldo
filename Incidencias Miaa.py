@@ -32,28 +32,9 @@ st.markdown("""
     .section-title { color: white; font-size: 18px !important; font-weight: bold; margin: 0 !important; }
     
     .card { background: #111827; padding: 14px; border-radius: 12px; border-left: 6px solid; margin-bottom: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
-    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .card-title { font-weight: bold; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px; }
-    .badge-critica { background-color: #ef444433; color: #ef4444; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; border: 1px solid #ef444466; }
-    .badge-status { padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
     
-    .diag-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px; }
-    .diag-value { font-size: 14px; color: #f3f4f6; font-weight: 600; margin-bottom: 12px; }
-    
-    .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2937; }
-    .metric-item { display: flex; flex-direction: column; }
-    .metric-label { font-size: 10px; color: #9ca3af; text-transform: uppercase; }
-    .metric-val { font-size: 13px; color: #f3f4f6; font-weight: 500; margin-top: 2px; }
-    
-    .progress-container { margin-bottom: 12px; background: #0b0f17; padding: 10px; border-radius: 8px; border: 1px solid #1f2937; }
-    .progress-title { font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
-    .progress-steps { display: flex; justify-content: space-between; align-items: center; position: relative; }
-    .step-item { display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1; }
-    .step-icon { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; }
-    .step-label { font-size: 9px; color: #9ca3af; text-align: center; }
-    
-    /* Expander estilizado integrado dentro de la tarjeta */
-    .streamlit-expanderHeader { background-color: #1f2937 !important; border-radius: 8px !important; color: white !important; font-size: 13px !important; border: 1px solid #374151 !important; }
+    /* Forzar que los expanders dentro de las tarjetas tengan buen aspecto */
+    .streamlit-expanderHeader { background-color: #1f2937 !important; border-radius: 6px !important; color: white !important; font-size: 12px !important; border: 1px solid #374151 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -125,7 +106,7 @@ def dibujar_mapa(gdf, color, unique_key):
 
     Fullscreen(position='topright').add_to(m)
     folium.LayerControl(position='topleft').add_to(m)
-    st_folium(m, height=280, use_container_width=True, key=unique_key)
+    st_folium(m, height=260, use_container_width=True, key=unique_key)
 
 def format_supervisor(text):
     wa_icon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="white" style="vertical-align: middle; margin-right: 4px;"><path d="M12.01 2c-5.51 0-9.99 4.48-9.99 9.99 0 1.76.46 3.48 1.33 5l-1.33 4.88 5-1.31c1.47.8 3.16 1.22 4.87 1.22 5.51 0 9.99-4.48 9.99-9.99S17.52 2 12.01 2zm0 18c-1.46 0-2.88-.41-4.11-1.18l-.29-.18-3.05.8.81-2.97-.18-.3C3.65 14.88 3.23 13.43 3.23 11.99 3.23 7.02 7.04 3.2 12.01 3.2s8.78 3.82 8.78 8.79-3.95 8.79-8.78 8.79zM16.48 15.5c-.27-.13-1.61-.79-1.86-.88s-.43-.13-.61.13c-.18.26-.69.88-.85 1.06-.16.18-.32.2-.59.07s-1.14-.42-2.17-1.34c-.8-.71-1.34-1.59-1.5-1.86s-.01-.43.11-.57c.12-.13.27-.34.4-.51.13-.17.17-.3.26-.51.09-.2.04-.37-.02-.51s-.61-1.48-.84-2.03c-.22-.53-.45-.46-.61-.46-.16 0-.34-.01-.51-.01s-.44.06-.67.31c-.23.25-.88.86-.88 2.09s.6 2.42.69 2.55c.09.13 1.73 2.64 4.19 3.7c.59.25 1.05.4 1.41.51.59.19 1.13.16 1.56.1.48-.07 1.51-.62 1.72-1.21.21-.59.21-1.1.15-1.21-.06-.11-.23-.17-.5-.3z"/></svg>'
@@ -137,8 +118,8 @@ def format_supervisor(text):
         tel_full = f"52{num}"
         return text.replace(match.group(0), f"<strong>{match.group(0)}</strong>") + f"""
             <div style='margin-top: 6px; display: flex; gap: 8px;'>
-                <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 4px 16px; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
-                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 4px 16px; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
+                <a href='tel:+52{num}' style='text-decoration: none; background: #10b981; color: white; padding: 4px 14px; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center;'>{tel_icon} Llamar</a>
+                <a href='https://wa.me/{tel_full}' target='_blank' style='text-decoration: none; background: #25d366; color: white; padding: 4px 14px; border-radius: 4px; font-size: 11px; display: inline-flex; align-items: center;'>{wa_icon} WhatsApp</a>
             </div>"""
     return text
 
@@ -170,111 +151,112 @@ def render_card(row, color, unique_key, con_mapa=True):
     s4_style, s4_ico = get_step_style(4)
     s5_style, s5_ico = get_step_style(5)
 
-    # Contenedor principal de la tarjeta en HTML
-    st.markdown(f"""
-    <div class='card' style='border-left-color: {color};'>
-        <div class='card-header'>
-            <div class='card-title'>
-                Pozo {row.get('NUM_POZO')} 
-                <span class='badge-critica'>CRÍTICA</span>
+    # Contenedor principal de la tarjeta
+    with st.container():
+        st.markdown(f"""
+        <div class='card' style='border-left-color: {color};'>
+            <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+                <div style='font-weight: bold; font-size: 16px; color: white; display: flex; align-items: center; gap: 8px;'>
+                    Pozo {row.get('NUM_POZO')} 
+                    <span style='background-color: #ef444433; color: #ef4444; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; border: 1px solid #ef444466;'>CRÍTICA</span>
+                </div>
+                <div style='padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; background: {color}22; color: {color}; border: 1px solid {color}66;'>{row['ESTATUS']}</div>
             </div>
-            <div class='badge-status' style='background: {color}22; color: {color}; border: 1px solid {color}66;'>{row['ESTATUS']}</div>
-        </div>
-        
-        <div class='diag-label'>Diagnóstico</div>
-        <div class='diag-value'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
-        
-        <div class='metrics-grid'>
-            <div class='metric-item'>
-                <div class='metric-label'>👥 Habitantes Afectados</div>
-                <div class='metric-val' style='color: #c084fc;'>12,540</div>
+            
+            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.5px;'>Diagnóstico</div>
+            <div style='font-size: 14px; color: #f3f4f6; font-weight: 600; margin-bottom: 12px;'>{row.get('DIAGNOSTICO_FALLA', 'Sin diagnóstico')}</div>
+            
+            <div style='display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #1f2937;'>
+                <div>
+                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>👥 Habitantes Afectados</div>
+                    <div style='font-size: 13px; color: #c084fc; font-weight: 500; margin-top: 2px;'>12,540</div>
+                </div>
+                <div>
+                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>💧 Prod. Perdida</div>
+                    <div style='font-size: 13px; color: #38bdf8; font-weight: 500; margin-top: 2px;'>18.5 LPS</div>
+                </div>
+                <div>
+                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Inicio</div>
+                    <div style='font-size: 13px; color: #f3f4f6; font-weight: 500; margin-top: 2px;'>{inicio.strftime('%d/%m %H:%M')}</div>
+                </div>
+                <div>
+                    <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Duración</div>
+                    <div style='font-size: 13px; color: {color}; font-weight: 500; margin-top: 2px;'>{duracion_str}</div>
+                </div>
             </div>
-            <div class='metric-item'>
-                <div class='metric-label'>💧 Prod. Perdida</div>
-                <div class='metric-val' style='color: #38bdf8;'>18.5 LPS</div>
-            </div>
-            <div class='metric-item'>
-                <div class='metric-label'>Inicio</div>
-                <div class='metric-val'>{inicio.strftime('%d/%m %H:%M')}</div>
-            </div>
-            <div class='metric-item'>
-                <div class='metric-label'>Duración</div>
-                <div class='metric-val' style='color: {color};'>{duracion_str}</div>
-            </div>
-        </div>
 
-        <div class='progress-container'>
-            <div class='progress-title'>Progreso</div>
-            <div class='progress-steps'>
-                <div class='step-item'><div class='step-icon' style='{s1_style}'>{s1_ico}</div><div class='step-label'>Diagnóstico</div></div>
-                <div class='step-item'><div class='step-icon' style='{s2_style}'>{s2_ico}</div><div class='step-label'>Refacciones</div></div>
-                <div class='step-item'><div class='step-icon' style='{s3_style}'>{s3_ico}</div><div class='step-label'>Reparación</div></div>
-                <div class='step-item'><div class='step-icon' style='{s4_style}'>{s4_ico}</div><div class='step-label'>Pruebas</div></div>
-                <div class='step-item'><div class='step-icon' style='{s5_style}'>{s5_ico}</div><div class='step-label'>Operando</div></div>
+            <div style='margin-bottom: 12px; background: #0b0f17; padding: 10px; border-radius: 8px; border: 1px solid #1f2937;'>
+                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px; font-weight: bold;'>Progreso</div>
+                <div style='display: flex; justify-content: space-between; align-items: center; position: relative;'>
+                    <div style='display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1;'><div style='width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; {s1_style}'>{s1_ico}</div><div style='font-size: 9px; color: #9ca3af; text-align: center;'>Diagnóstico</div></div>
+                    <div style='display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1;'><div style='width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; {s2_style}'>{s2_ico}</div><div style='font-size: 9px; color: #9ca3af; text-align: center;'>Refacciones</div></div>
+                    <div style='display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1;'><div style='width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; {s3_style}'>{s3_ico}</div><div style='font-size: 9px; color: #9ca3af; text-align: center;'>Reparación</div></div>
+                    <div style='display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1;'><div style='width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; {s4_style}'>{s4_ico}</div><div style='font-size: 9px; color: #9ca3af; text-align: center;'>Pruebas</div></div>
+                    <div style='display: flex; flex-direction: column; align-items: center; z-index: 2; flex: 1;'><div style='width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; margin-bottom: 4px; {s5_style}'>{s5_ico}</div><div style='font-size: 9px; color: #9ca3af; text-align: center;'>Operando</div></div>
+                </div>
             </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # El expandible queda incluido dentro del flujo visual de la tarjeta de incidencia
-    with st.expander("Ver Detalles"):
-        if con_mapa:
-            gdf = get_geometries(row.get('NUM_POZO'))
-            if gdf is not None and not gdf.empty:
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 6px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
-                dibujar_mapa(gdf, color, unique_key)
-                sectores = ', '.join(gdf['Sector'].dropna().unique())
-                distritos = ', '.join(gdf['Distrito'].dropna().unique())
-                raw_supervisores = gdf['Supervisor'].dropna().unique()
-                supervisores_list = []
-                for item in raw_supervisores:
-                    items = [s.strip() for s in item.split(',') if s.strip()]
-                    supervisores_list.extend([format_supervisor(s) for s in items])
-                supervisores_html = "".join([f"<div style='margin-bottom: 10px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;'>• {s}</div>" for s in supervisores_list])
-                st.markdown(f"""
-                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 8px;'>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Sector</div><div style='font-size: 13px; color: white;'>{sectores if sectores else 'N/A'}</div>
+        """, unsafe_allow_html=True)
+        
+        # Expander integrado dentro de la tarjeta
+        with st.expander("Ver Detalles"):
+            if con_mapa:
+                gdf = get_geometries(row.get('NUM_POZO'))
+                if gdf is not None and not gdf.empty:
+                    st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 6px;'><strong>Colonias:</strong> {', '.join(gdf['Col_atl'].unique())}</div>", unsafe_allow_html=True)
+                    dibujar_mapa(gdf, color, unique_key)
+                    sectores = ', '.join(gdf['Sector'].dropna().unique())
+                    distritos = ', '.join(gdf['Distrito'].dropna().unique())
+                    raw_supervisores = gdf['Supervisor'].dropna().unique()
+                    supervisores_list = []
+                    for item in raw_supervisores:
+                        items = [s.strip() for s in item.split(',') if s.strip()]
+                        supervisores_list.extend([format_supervisor(s) for s in items])
+                    supervisores_html = "".join([f"<div style='margin-bottom: 10px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;'>• {s}</div>" for s in supervisores_list])
+                    st.markdown(f"""
+                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 8px;'>
+                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Sector</div><div style='font-size: 13px; color: white;'>{sectores if sectores else 'N/A'}</div>
+                            </div>
+                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Distrito</div><div style='font-size: 13px; color: white;'>{distritos if distritos else 'N/A'}</div>
+                            </div>
+                            <div style='padding: 0px; margin-top: 10px;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px;'>Supervisores (Contacto móvil)</div>
+                                <div>{supervisores_html if supervisores_list else 'N/A'}</div>
+                            </div>   
                         </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Distrito</div><div style='font-size: 13px; color: white;'>{distritos if distritos else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 0px; margin-top: 10px;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px;'>Supervisores (Contacto móvil)</div>
-                            <div>{supervisores_html if supervisores_list else 'N/A'}</div>
-                        </div>   
-                    </div>
-                """, unsafe_allow_html=True)
-        else:
-            df_info = get_colonias_info(row.get('NUM_POZO'))
-            if df_info is not None and not df_info.empty:
-                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
-                sectores = ', '.join(df_info['Sector'].dropna().unique())
-                distritos = ', '.join(df_info['Distrito'].dropna().unique())
-                raw_supervisores = df_info['Supervisor'].dropna().unique()
-                supervisores_list = []
-                for item in raw_supervisores:
-                    items = [s.strip() for s in item.split(',') if s.strip()]
-                    supervisores_list.extend([format_supervisor(s) for s in items])
-                supervisores_html = "".join([f"<div style='margin-bottom: 10px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;'>• {s}</div>" for s in supervisores_list])
-                
-                st.markdown(f"""
-                    <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 4px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Sector</div><div style='font-size: 13px; color: white;'>{sectores if sectores else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Distrito</div><div style='font-size: 13px; color: white;'>{distritos if distritos else 'N/A'}</div>
-                        </div>
-                        <div style='padding: 0px; margin-top: 10px;'>
-                            <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px;'>Supervisores (Contacto móvil)</div>
-                            <div>{supervisores_html if supervisores_list else 'N/A'}</div>
-                        </div>   
-                    </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
             else:
-                st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
+                df_info = get_colonias_info(row.get('NUM_POZO'))
+                if df_info is not None and not df_info.empty:
+                    colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                    sectores = ', '.join(df_info['Sector'].dropna().unique())
+                    distritos = ', '.join(df_info['Distrito'].dropna().unique())
+                    raw_supervisores = df_info['Supervisor'].dropna().unique()
+                    supervisores_list = []
+                    for item in raw_supervisores:
+                        items = [s.strip() for s in item.split(',') if s.strip()]
+                        supervisores_list.extend([format_supervisor(s) for s in items])
+                    supervisores_html = "".join([f"<div style='margin-bottom: 10px; border-bottom: 1px solid #1f2937; padding-bottom: 8px;'>• {s}</div>" for s in supervisores_list])
+                    
+                    st.markdown(f"""
+                        <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 4px;'>
+                            <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> {colonias if colonias else 'N/A'}</div>
+                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Sector</div><div style='font-size: 13px; color: white;'>{sectores if sectores else 'N/A'}</div>
+                            </div>
+                            <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase;'>Distrito</div><div style='font-size: 13px; color: white;'>{distritos if distritos else 'N/A'}</div>
+                            </div>
+                            <div style='padding: 0px; margin-top: 10px;'>
+                                <div style='font-size: 10px; color: #9ca3af; text-transform: uppercase; margin-bottom: 8px;'>Supervisores (Contacto móvil)</div>
+                                <div>{supervisores_html if supervisores_list else 'N/A'}</div>
+                            </div>   
+                        </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    st.markdown("<div style='font-size: 12px; color: #9ca3af;'>Sin información de colonias registrada.</div>", unsafe_allow_html=True)
 
 # LÓGICA PRINCIPAL
 st.markdown("""
