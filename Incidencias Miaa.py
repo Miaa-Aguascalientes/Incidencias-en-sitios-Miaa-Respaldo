@@ -249,7 +249,8 @@ def render_card(row, color, unique_key, con_mapa=True):
     
     pozo_header_text = f"Pozo {num_pozo_val}"
     if pd.notnull(afectacion_val) and str(afectacion_val).strip() != "":
-        pozo_header_text += f" (<span style='color: #00d2ff;'>{afectacion_val}%</span>)"
+        val_limpio = str(afectacion_val).replace('%', '').strip()
+        pozo_header_text += f" (<span style='color: #00d2ff;'>{val_limpio}% de afectación</span>)"
     
     st.markdown(f"""
     <div class='card' style='border-left-color: {color};'>
