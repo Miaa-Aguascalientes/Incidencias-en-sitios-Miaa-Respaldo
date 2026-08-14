@@ -55,7 +55,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* Forzar color azul turquesa fuerte en el switch/toggle de Streamlit (usando selectores profundos de BaseWeb) */
     div[data-baseweb="checkbox"] div[class*="st-"] {
         background-color: #00d2ff !important;
     }
@@ -120,7 +119,7 @@ def get_data():
 )
 @st.cache_data(ttl=60)
 def get_geometries(num_pozo):
-    query = f"SELECT ST_AsText(geom) as geom_wkt, Col_atl, Sector, Distrito, Supervisor FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
+    query = f"SELECT ST_AsText(geom) as geom_wkt, Col_atl, Sector, Distrito, Supervisor, Porcentaje FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
     try:
         df = pd.read_sql(query, get_engine_telemetria())
         if not df.empty and df['geom_wkt'].iloc[0] is not None:
@@ -134,7 +133,7 @@ def get_geometries(num_pozo):
 
 @st.cache_data(ttl=60)
 def get_colonias_info(num_pozo):
-    query = f"SELECT Col_atl, Sector, Distrito, Supervisor FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
+    query = f"SELECT Col_atl, Sector, Distrito, Supervisor, Porcentaje FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
     try:
         df = pd.read_sql(query, get_engine_telemetria())
         return df if not df.empty else None
@@ -152,7 +151,7 @@ def get_todas_colonias():
 
 @st.cache_data(ttl=60)
 def buscar_afectacion_diccionario(nombre_colonia):
-    query = f"SELECT Col_atl, Sector, Distrito, Pozos, Supervisor FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
+    query = f"SELECT Col_atl, Sector, Distrito, Pozos, Supervisor, Porcentaje FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
     try:
         df = pd.read_sql(query, get_engine_telemetria())
         return df if not df.empty else None
@@ -185,11 +184,12 @@ def dibujar_mapa(gdf, color, unique_key):
     folium.GeoJson(gdf, style_function=lambda x: {'fillColor': color, 'color': color, 'weight': 2, 'fillOpacity': 0.4}).add_to(m)
     
     for _, r in gdf.iterrows():
+        porc_text = f" ({r['Porcentaje']}%)" if 'Porcentaje' in r and pd.notnull(r['Porcentaje']) else ""
         folium.Marker(
             location=[r.geometry.centroid.y, r.geometry.centroid.x],
             icon=DivIcon(
                 icon_anchor=(-5, 10), 
-                html=f'<div style="font-size: 8px; color: white; background: rgba(0,0,0,0.7); padding: 2px; white-space: nowrap; border-radius: 3px;">{r["Col_atl"]}</div>'
+                html=f'<div style="font-size: 8px; color: white; background: rgba(0,0,0,0.7); padding: 2px; white-space: nowrap; border-radius: 3px;">{r["Col_atl"]}{porc_text}</div>'
             )
         ).add_to(m)
 
@@ -237,7 +237,13 @@ def render_card(row, color, unique_key, con_mapa=True):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
             if gdf is not None and not gdf.empty:
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
+                colonias_con_porc = []
+                for _, r_col in gdf.iterrows():
+                    c_name = r_col['Col_atl']
+                    c_porc = f" ({r_col['Porcentaje']}%)" if 'Porcentaje' in r_col and pd.notnull(r_col['Porcentaje']) else ""
+                    colonias_con_porc.append(f"{c_name}{c_porc}")
+                
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(colonias_con_porc)}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
@@ -264,7 +270,13 @@ def render_card(row, color, unique_key, con_mapa=True):
         else:
             df_info = get_colonias_info(row.get('NUM_POZO'))
             if df_info is not None and not df_info.empty:
-                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                colonias_con_porc = []
+                for _, r_col in df_info.iterrows():
+                    c_name = r_col['Col_atl']
+                    c_porc = f" ({r_col['Porcentaje']}%)" if 'Porcentaje' in r_col and pd.notnull(r_col['Porcentaje']) else ""
+                    colonias_con_porc.append(f"{c_name}{c_porc}")
+                
+                colonias_str = ', '.join(colonias_con_porc)
                 sectores = ', '.join(df_info['Sector'].dropna().unique())
                 distritos = ', '.join(df_info['Distrito'].dropna().unique())
                 raw_supervisores = df_info['Supervisor'].dropna().unique()
@@ -276,7 +288,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias_str if colonias_str else 'N/A'}</span></div>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
@@ -303,7 +315,7 @@ st.markdown("""
     <div class="blue-divider"></div>
 """, unsafe_allow_html=True)
 
-activar_busqueda = st.toggle("Buscador de colonias", value=False)
+activar_busqueda = st.toggle("Consultar Colonia", value=False)
 
 if activar_busqueda:
     st.markdown("### 🔍 Consultar Colonia")
