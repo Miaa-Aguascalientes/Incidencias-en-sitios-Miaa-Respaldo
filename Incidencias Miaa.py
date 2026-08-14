@@ -55,7 +55,6 @@ st.markdown("""
         font-weight: 700 !important;
     }
 
-    /* Forzar color azul turquesa fuerte en el switch/toggle de Streamlit (usando selectores profundos de BaseWeb) */
     div[data-baseweb="checkbox"] div[class*="st-"] {
         background-color: #00d2ff !important;
     }
@@ -134,10 +133,37 @@ def get_geometries(num_pozo):
 
 @st.cache_data(ttl=60)
 def get_colonias_info(num_pozo):
-    query = f"SELECT Col_atl, Sector, Distrito, Supervisor FROM Diccionario_colonias WHERE Pozos LIKE '%%{num_pozo}%%'"
+    cols_pozo_sql = ", ".join([f"Pozo_{i}, Afectacion_{i}" for i in range(1, 11)])
+    query = f"SELECT Col_atl, Sector, Distrito, Supervisor, {cols_pozo_sql} FROM Diccionario_colonias"
     try:
         df = pd.read_sql(query, get_engine_telemetria())
-        return df if not df.empty else None
+        if df.empty:
+            return None
+        
+        target = str(num_pozo).replace(' ', '').upper()
+        variants = {target, f"P-{target}", target.replace('P-', '')}
+        
+        matched_rows = []
+        for _, row in df.iterrows():
+            match_found = False
+            afectacion_val = None
+            for i in range(1, 11):
+                p_val = row.get(f"Pozo_{i}")
+                if pd.notnull(p_val):
+                    p_str = str(p_val).replace(' ', '').upper()
+                    p_variants = {p_str, f"P-{p_str}", p_str.replace('P-', '')}
+                    if variants.intersection(p_variants):
+                        match_found = True
+                        afectacion_val = row.get(f"Afectacion_{i}")
+                        break
+            if match_found:
+                r_copy = row.copy()
+                r_copy['Afectacion_Pozo'] = afectacion_val
+                matched_rows.append(r_copy)
+                
+        if matched_rows:
+            return pd.DataFrame(matched_rows)
+        return None
     except Exception:
         return None
 
@@ -152,7 +178,8 @@ def get_todas_colonias():
 
 @st.cache_data(ttl=60)
 def buscar_afectacion_diccionario(nombre_colonia):
-    query = f"SELECT Col_atl, Sector, Distrito, Pozos, Supervisor FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
+    cols_pozo_sql = ", ".join([f"Pozo_{i}, Afectacion_{i}" for i in range(1, 11)])
+    query = f"SELECT Col_atl, Sector, Distrito, Supervisor, {cols_pozo_sql} FROM Diccionario_colonias WHERE Col_atl LIKE '%%{nombre_colonia}%%'"
     try:
         df = pd.read_sql(query, get_engine_telemetria())
         return df if not df.empty else None
@@ -236,8 +263,24 @@ def render_card(row, color, unique_key, con_mapa=True):
     with st.expander("🌎 Ver Detalles"):
         if con_mapa:
             gdf = get_geometries(row.get('NUM_POZO'))
+            df_info = get_colonias_info(row.get('NUM_POZO'))
+            
             if gdf is not None and not gdf.empty:
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
+                colonias_html = ""
+                if df_info is not None and not df_info.empty:
+                    col_items = []
+                    for _, c_row in df_info.iterrows():
+                        c_name = c_row.get('Col_atl', 'N/A')
+                        afectacion = c_row.get('Afectacion_Pozo')
+                        if pd.notnull(afectacion) and str(afectacion).strip() != "":
+                            col_items.append(f"{c_name} (<span style='color: #00d2ff;'>{afectacion}%</span>)")
+                        else:
+                            col_items.append(c_name)
+                    colonias_html = ", ".join(col_items)
+                else:
+                    colonias_html = ', '.join(gdf['Col_atl'].unique())
+
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias_html}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
@@ -264,7 +307,16 @@ def render_card(row, color, unique_key, con_mapa=True):
         else:
             df_info = get_colonias_info(row.get('NUM_POZO'))
             if df_info is not None and not df_info.empty:
-                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
+                col_items = []
+                for _, c_row in df_info.iterrows():
+                    c_name = c_row.get('Col_atl', 'N/A')
+                    afectacion = c_row.get('Afectacion_Pozo')
+                    if pd.notnull(afectacion) and str(afectacion).strip() != "":
+                        col_items.append(f"{c_name} (<span style='color: #00d2ff;'>{afectacion}%</span>)")
+                    else:
+                        col_items.append(c_name)
+                colonias = ", ".join(col_items)
+                
                 sectores = ', '.join(df_info['Sector'].dropna().unique())
                 distritos = ', '.join(df_info['Distrito'].dropna().unique())
                 raw_supervisores = df_info['Supervisor'].dropna().unique()
@@ -276,7 +328,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
@@ -335,12 +387,13 @@ if activar_busqueda:
                 ]
                 
                 pozos_asociados = set()
-                for pozos_str in df_col_db['Pozos'].dropna():
-                    tokens = re.findall(r'([A-Za-z]?\s*-?\s*\d+[A-Za-z]?)', str(pozos_str))
-                    for t in tokens:
-                        limpio = t.replace(' ', '').upper()
-                        if limpio:
-                            pozos_asociados.add(limpio)
+                for _, row in df_col_db.iterrows():
+                    for i in range(1, 11):
+                        p_val = row.get(f"Pozo_{i}")
+                        if pd.notnull(p_val):
+                            limpio = str(p_val).replace(' ', '').upper()
+                            if limpio:
+                                pozos_asociados.add(limpio)
                 
                 def coincide_pozo(val):
                     v_str = str(val).replace(' ', '').upper()
