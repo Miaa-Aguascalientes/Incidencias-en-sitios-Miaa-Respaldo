@@ -138,15 +138,16 @@ def get_colonias_info(num_pozo):
     try:
         df = pd.read_sql(query, get_engine_telemetria())
         if df.empty:
-            return None
+            return None, None
         
         target = str(num_pozo).replace(' ', '').upper()
         variants = {target, f"P-{target}", target.replace('P-', '')}
         
         matched_rows = []
+        afectacion_pozo = None
+        
         for _, row in df.iterrows():
             match_found = False
-            afectacion_val = None
             for i in range(1, 11):
                 p_val = row.get(f"Pozo_{i}")
                 if pd.notnull(p_val):
@@ -154,18 +155,17 @@ def get_colonias_info(num_pozo):
                     p_variants = {p_str, f"P-{p_str}", p_str.replace('P-', '')}
                     if variants.intersection(p_variants):
                         match_found = True
-                        afectacion_val = row.get(f"Afectacion_{i}")
+                        if afectacion_pozo is None:
+                            afectacion_pozo = row.get(f"Afectacion_{i}")
                         break
             if match_found:
-                r_copy = row.copy()
-                r_copy['Afectacion_Pozo'] = afectacion_val
-                matched_rows.append(r_copy)
+                matched_rows.append(row)
                 
         if matched_rows:
-            return pd.DataFrame(matched_rows)
-        return None
+            return pd.DataFrame(matched_rows), afectacion_pozo
+        return None, None
     except Exception:
-        return None
+        return None, None
 
 @st.cache_data(ttl=60)
 def get_todas_colonias():
@@ -244,10 +244,17 @@ def render_card(row, color, unique_key, con_mapa=True):
     fin_raw = row.get('FECHA_HORA_FIN')
     duracion = (pd.to_datetime(fin_raw).tz_localize(None).tz_localize('America/Mexico_City') - inicio) if pd.notnull(fin_raw) else (get_now_mexico() - inicio)
     
+    num_pozo_val = row.get('NUM_POZO')
+    df_info, afectacion_val = get_colonias_info(num_pozo_val)
+    
+    pozo_header_text = f"Pozo {num_pozo_val}"
+    if pd.notnull(afectacion_val) and str(afectacion_val).strip() != "":
+        pozo_header_text += f" (<span style='color: #00d2ff;'>{afectacion_val}%</span>)"
+    
     st.markdown(f"""
     <div class='card' style='border-left-color: {color};'>
         <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
-            <div style='font-weight: bold; font-size: 16px; color: white;'>Pozo {row.get('NUM_POZO')}</div>
+            <div style='font-weight: bold; font-size: 16px; color: white;'>{pozo_header_text}</div>
             <div style='background: {color}33; color: {color}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: bold;'>{row['ESTATUS']}</div>
         </div>
         <div class='label'>Diagnóstico</div>
@@ -262,25 +269,9 @@ def render_card(row, color, unique_key, con_mapa=True):
     
     with st.expander("🌎 Ver Detalles"):
         if con_mapa:
-            gdf = get_geometries(row.get('NUM_POZO'))
-            df_info = get_colonias_info(row.get('NUM_POZO'))
-            
+            gdf = get_geometries(num_pozo_val)
             if gdf is not None and not gdf.empty:
-                colonias_html = ""
-                if df_info is not None and not df_info.empty:
-                    col_items = []
-                    for _, c_row in df_info.iterrows():
-                        c_name = c_row.get('Col_atl', 'N/A')
-                        afectacion = c_row.get('Afectacion_Pozo')
-                        if pd.notnull(afectacion) and str(afectacion).strip() != "":
-                            col_items.append(f"{c_name} (<span style='color: #00d2ff;'>{afectacion}%</span>)")
-                        else:
-                            col_items.append(c_name)
-                    colonias_html = ", ".join(col_items)
-                else:
-                    colonias_html = ', '.join(gdf['Col_atl'].unique())
-
-                st.markdown(f"<div style='font-size: 12px; color: #9ca3af; margin-bottom: 8px;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias_html}</span></div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{', '.join(gdf['Col_atl'].unique())}</span></div>", unsafe_allow_html=True)
                 dibujar_mapa(gdf, color, unique_key)
                 sectores = ', '.join(gdf['Sector'].dropna().unique())
                 distritos = ', '.join(gdf['Distrito'].dropna().unique())
@@ -305,18 +296,8 @@ def render_card(row, color, unique_key, con_mapa=True):
                     </div>
                 """, unsafe_allow_html=True)
         else:
-            df_info = get_colonias_info(row.get('NUM_POZO'))
             if df_info is not None and not df_info.empty:
-                col_items = []
-                for _, c_row in df_info.iterrows():
-                    c_name = c_row.get('Col_atl', 'N/A')
-                    afectacion = c_row.get('Afectacion_Pozo')
-                    if pd.notnull(afectacion) and str(afectacion).strip() != "":
-                        col_items.append(f"{c_name} (<span style='color: #00d2ff;'>{afectacion}%</span>)")
-                    else:
-                        col_items.append(c_name)
-                colonias = ", ".join(col_items)
-                
+                colonias = ', '.join(df_info['Col_atl'].dropna().unique())
                 sectores = ', '.join(df_info['Sector'].dropna().unique())
                 distritos = ', '.join(df_info['Distrito'].dropna().unique())
                 raw_supervisores = df_info['Supervisor'].dropna().unique()
@@ -328,7 +309,7 @@ def render_card(row, color, unique_key, con_mapa=True):
                 
                 st.markdown(f"""
                     <div style='display: flex; flex-direction: column; gap: 8px; margin-top: 10px;'>
-                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias y Afectación:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
+                        <div style='font-size: 12px; color: #9ca3af;'><strong>Colonias:</strong> <span style='color: #ffffff; font-weight: 500;'>{colonias if colonias else 'N/A'}</span></div>
                         <div style='padding: 8px; background: #050a10; border-radius: 5px; border: 1px solid #374151;'>
                             <div class='label'>Sector</div><div class='value'>{sectores if sectores else 'N/A'}</div>
                         </div>
